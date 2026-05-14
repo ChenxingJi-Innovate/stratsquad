@@ -1,8 +1,8 @@
 import { runStreamed } from './_run'
 import type { SubAgent } from '../types'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
-export async function runComposer(question: string, outputs: Record<SubAgent, string>, sse: SSEWriter): Promise<string> {
+export async function runComposer(question: string, outputs: Record<SubAgent, string>, sse: EventSink): Promise<string> {
   const prompt = `你是天美策略团队的高级研究员，需要把 4 位 AI 子 Agent 的输出合成为一份给高层看的"战略简报"。
 
 要求：

@@ -1,10 +1,10 @@
 import { runJSON } from './_run'
 import type { Subtask } from '../types'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
 // The orchestrator reads the strategy question and decomposes it into 4 parallel sub-agent briefs.
 // Each sub-agent gets a focused prompt instead of the full question, which sharpens their outputs.
-export async function runOrchestrator(question: string, corpus: string, sse: SSEWriter): Promise<Subtask[]> {
+export async function runOrchestrator(question: string, corpus: string, sse: EventSink): Promise<Subtask[]> {
   const prompt = `你是天美策略团队的 AI 编排器。用户输入了一个战略问题，请把它拆解为 4 个并行的子任务，分别交给 4 个专家 Agent 执行。
 
 子 Agent 名单（固定，不能改名也不能增减）：

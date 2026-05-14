@@ -1,8 +1,8 @@
 import { runJSON } from './_run'
 import { JUDGE_PASS_THRESHOLD, type JudgeScore, type SubAgent } from '../types'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
-export async function runJudge(outputs: Record<SubAgent, string>, sse: SSEWriter): Promise<JudgeScore[]> {
+export async function runJudge(outputs: Record<SubAgent, string>, sse: EventSink): Promise<JudgeScore[]> {
   const prompt = `你是天美策略总监，负责评审 4 位 AI 子 Agent 的输出质量。
 
 评分维度 (每项 0-100)：

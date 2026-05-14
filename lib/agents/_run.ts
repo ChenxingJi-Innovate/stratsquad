@@ -1,13 +1,13 @@
 import { ds, MODEL, safeParseJSON } from '../deepseek'
 import type { AgentName } from '../types'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
 // Streamed chat completion. Emits agent_start at the top, agent_token per delta, agent_done at the end.
 // Returns the full assistant content for the orchestrator to chain into the next agent.
 export async function runStreamed(opts: {
   agent: AgentName
   prompt: string
-  sse: SSEWriter
+  sse: EventSink
   maxTokens?: number
   json?: boolean
   system?: string

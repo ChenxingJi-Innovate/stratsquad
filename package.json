@@ -9,9 +9,11 @@
     "rag:ingest": "tsx scripts/ingest.ts",
     "rag:embed": "tsx scripts/embed.ts",
     "rag:eval": "tsx scripts/eval.ts",
-    "rag:all": "npm run rag:ingest && npm run rag:embed && npm run rag:eval"
+    "rag:all": "npm run rag:ingest && npm run rag:embed && npm run rag:eval",
+    "mcp": "tsx mcp/server.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
     "lucide-react": "^1.11.0",
     "marked": "^14.1.3",
     "next": "14.2.18",

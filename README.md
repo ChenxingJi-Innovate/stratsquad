@@ -34,15 +34,17 @@ A production-ready multi-agent system for game industry strategy work. Built for
 
 ## Why this maps to the JD
 
-| JD line                                               | How StratSquad covers it                                  |
-|-------------------------------------------------------|-----------------------------------------------------------|
-| 推动 AI 原生工作流落地, 设计行业领先的 Agentic 工作流 | 7-agent pipeline, orchestrator-driven decomposition       |
-| 制定 AI 运用整体规划, 撰写 PRD                        | This README + `/CLAUDE.md` are the PRD                    |
-| 维护和升级 AI 工具, 持续提升 Agent 输出质量           | Judge-driven retry loop with explicit 4-dim rubric        |
-| (加分) 多轮工具调用 + 子 agent + 评委                 | Exactly the architecture here                             |
-| (加分) 中文 RAG                                       | Optional corpus paste, prioritized in trend agent prompt  |
-| (加分) 后端 / 知识库开发经验                          | SSE streaming server route, type-safe event protocol      |
-| Python / TypeScript                                   | TypeScript, OpenAI-compatible SDK pointed at DeepSeek     |
+| JD line                                               | How StratSquad covers it                                              |
+|-------------------------------------------------------|-----------------------------------------------------------------------|
+| 推动 AI 原生工作流落地, 设计行业领先的 Agentic 工作流 | 7-agent pipeline, orchestrator-driven decomposition                   |
+| 制定 AI 运用整体规划, 撰写 PRD                        | This README + `/CLAUDE.md` are the PRD                                |
+| 维护和升级 AI 工具, 持续提升 Agent 输出质量           | Judge-driven retry loop with explicit 4-dim rubric                    |
+| (加分) 多轮工具调用 + 子 agent + 评委                 | Exactly the architecture here                                         |
+| (加分) 中文 RAG                                       | BGE-M3 over `corpus/`, brute-force cosine, labeled hit@k / MRR eval   |
+| (加分) BGE / E5 / OpenAI Embedding 调参与评测         | `npm run rag:eval` produces a side-by-side comparison table           |
+| (加分) MCP 协议 / IDE Agent 生态                      | `mcp/server.ts` exposes `stratsquad_run` + `stratsquad_retrieve` tools|
+| (加分) 后端 / 知识库开发经验                          | SSE streaming route, type-safe event protocol, RAG store, MCP server  |
+| Python / TypeScript                                   | TypeScript, OpenAI-compatible SDK pointed at DeepSeek                 |
 
 ---
 
@@ -195,6 +197,59 @@ The labeled eval set (`eval/labeled.json`) has 22 hand-written Chinese queries m
 1. Drop more `.md` or `.txt` files into `corpus/`. Headings (`##`) are tracked as section labels.
 2. `npm run rag:ingest && npm run rag:embed`
 3. Commit `data/embeddings.json` so production deploys don't need to re-embed.
+
+---
+
+## MCP server · wire StratSquad into Claude Desktop / Cursor / Windsurf
+
+StratSquad also ships as a Model Context Protocol server. Once registered, Claude Desktop (or any MCP-aware IDE / agent) can invoke the full multi-agent pipeline as a single tool call.
+
+### Two tools exposed
+
+| Tool | What it does |
+|------|--------------|
+| `stratsquad_run` | Runs the full pipeline (orchestrator → 4 sub-agents → judge → composer + RAG) and returns the final markdown brief, judge scores, and RAG hits. |
+| `stratsquad_retrieve` | Just runs RAG retrieval (no LLM). Useful for debugging retrieval quality or sanity-checking what a query hits. |
+
+### Boot manually
+
+```bash
+npm run mcp
+# stderr: "StratSquad MCP server ready on stdio"
+# stdout is reserved for the MCP wire protocol
+```
+
+### Register with Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "stratsquad": {
+      "command": "npx",
+      "args": ["tsx", "/absolute/path/to/StratSquad/mcp/server.ts"],
+      "env": {
+        "DEEPSEEK_API_KEY": "sk-xxx",
+        "SILICONFLOW_API_KEY": "sk-xxx"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop. The `stratsquad_run` and `stratsquad_retrieve` tools should appear in the slash-tool menu.
+
+### Register with Cursor / Windsurf
+
+Same JSON shape goes into `~/.cursor/mcp.json` (Cursor) or the equivalent IDE-specific path.
+
+### Quick stdin test (without an MCP client)
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | npm run mcp
+# should reply with the 2-tool catalog
+```
 
 ---
 

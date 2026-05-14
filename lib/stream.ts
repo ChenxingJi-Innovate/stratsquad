@@ -1,8 +1,15 @@
 import type { StreamEvent } from './types'
 
+// A sink agents emit progress events to. SSEWriter pushes to an HTTP stream,
+// BufferSink collects in memory (used by the MCP server and offline tests).
+export interface EventSink {
+  emit(event: StreamEvent): void
+  close?(): void
+}
+
 // Build a TransformStream-like writer over a ReadableStream controller.
 // Each emit() sends one SSE `data:` line so the browser EventSource (or fetch reader) can parse incrementally.
-export class SSEWriter {
+export class SSEWriter implements EventSink {
   private encoder = new TextEncoder()
   constructor(private controller: ReadableStreamDefaultController<Uint8Array>) {}
 
@@ -18,6 +25,14 @@ export class SSEWriter {
       // controller may already be closed if client aborted
     }
   }
+}
+
+// Captures every event for later inspection. Used by the MCP server to return
+// the full event log alongside the final brief.
+export class BufferSink implements EventSink {
+  events: StreamEvent[] = []
+  emit(event: StreamEvent) { this.events.push(event) }
+  close() { /* no-op */ }
 }
 
 export function sseHeaders(): HeadersInit {

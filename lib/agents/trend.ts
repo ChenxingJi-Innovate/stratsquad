@@ -1,8 +1,8 @@
 import { runStreamed } from './_run'
 import type { RagHit } from '../rag/types'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
-export async function runTrend(brief: string, hits: RagHit[], sse: SSEWriter, attempt = 1): Promise<string> {
+export async function runTrend(brief: string, hits: RagHit[], sse: EventSink, attempt = 1): Promise<string> {
   const stricter = attempt > 1 ? '\n\n上一轮论证空泛，本轮务必给出至少 3 个具体数字 (市场规模、增长率、用户量) 和 2 个具体技术 / 玩法事件 (例：UE5 Nanite 上线、AI NPC 在某产品落地)。' : ''
 
   // Top-k retrieved chunks become structured citations. Each one carries [#N] so the model

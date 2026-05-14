@@ -1,7 +1,7 @@
 import { runStreamed } from './_run'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
-export async function runMarket(brief: string, sse: SSEWriter, attempt = 1): Promise<string> {
+export async function runMarket(brief: string, sse: EventSink, attempt = 1): Promise<string> {
   const stricter = attempt > 1 ? '\n\n上一轮缺乏具体数据，本轮务必给出：人均 GDP 区间、移动游戏 ARPU 区间、主流支付渠道名字 (Boost / GCash / DANA / KaKaoPay 等)、主流买量平台 (TikTok Ads / Meta / Yandex 等)。' : ''
   const prompt = `你是出海发行策略专家，做过东南亚 / 中东 / 拉美 / 日韩 / 北美的本地化发行。
 

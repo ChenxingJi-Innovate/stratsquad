@@ -1,7 +1,7 @@
 import { runStreamed } from './_run'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
-export async function runRisk(brief: string, sse: SSEWriter, attempt = 1): Promise<string> {
+export async function runRisk(brief: string, sse: EventSink, attempt = 1): Promise<string> {
   const stricter = attempt > 1 ? '\n\n上一轮风险点过于泛泛，本轮务必给出每条风险的：触发条件、影响级别 (高/中/低)、可观察的前置信号、缓解动作。' : ''
   const prompt = `你是游戏合规与政策风险分析师，熟悉中国 NPPA 版号、未成年人防沉迷、平台抽成 (苹果 30% / Google 30% / 国内安卓应用商店)、欧盟 DSA / GDPR、美国 COPPA、印尼 / 越南 / 沙特等地的内容审查规则。
 

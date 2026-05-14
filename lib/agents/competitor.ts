@@ -1,7 +1,7 @@
 import { runStreamed } from './_run'
-import type { SSEWriter } from '../stream'
+import type { EventSink } from '../stream'
 
-export async function runCompetitor(brief: string, sse: SSEWriter, attempt = 1): Promise<string> {
+export async function runCompetitor(brief: string, sse: EventSink, attempt = 1): Promise<string> {
   const stricter = attempt > 1 ? '\n\n上一轮你的输出证据不足 / 论点空洞，本轮务必：每个论点带一个具体产品名 + 一个量化数据点（可估算，但必须给出数字范围）。' : ''
   const prompt = `你是资深游戏竞品分析师，过去 5 年做过《王者荣耀》《原神》《PUBG Mobile》这一级别产品的拆解。
 
