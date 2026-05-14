@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background: #FAFAF7;
+  color: #111111;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #E60023;
+  color: #FFFFFF;
+}
+
+textarea::placeholder, input::placeholder {
+  color: #A5A5A5;
+}
+
+.font-display {
+  font-feature-settings: "kern", "liga", "dlig";
+  letter-spacing: -0.02em;
+}
+
+/* Minimal prose styling for marked-rendered markdown.
+   Keep Gestalt sizes — only headings get the editorial scale. */
+.prose-brief h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #111111; margin: 24px 0 12px; }
+.prose-brief h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #111111; margin: 24px 0 8px; padding-top: 8px; border-top: 1px solid #F1F1F1; }
+.prose-brief h2:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.prose-brief h3 { font-size: 16px; font-weight: 700; color: #2B2B2B; margin: 16px 0 4px; }
+.prose-brief p  { margin: 8px 0; }
+.prose-brief ul, .prose-brief ol { margin: 8px 0 8px 20px; padding: 0; }
+.prose-brief li { margin: 4px 0; }
+.prose-brief strong { font-weight: 700; color: #111111; }
+.prose-brief em { font-style: italic; color: #4A4A4A; }
+.prose-brief code { font-family: SFMono-Medium, "SF Mono", Menlo, monospace; font-size: 0.92em; background: #F1F1F1; padding: 2px 6px; border-radius: 4px; }
+.prose-brief blockquote { border-left: 3px solid #E60023; padding-left: 12px; margin: 12px 0; color: #4A4A4A; font-style: italic; }
+.prose-brief hr { border: 0; border-top: 1px solid #F1F1F1; margin: 16px 0; }
+
+/* Tailwind v3 doesn't ship line-clamp by default here. */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

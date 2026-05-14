@@ -1,0 +1,114 @@
+{
+  "_comment": "Each query is labeled with one or more (source, heading) tuples representing the ground-truth relevant sections. A retrieved chunk is 'relevant' iff its (source, heading) matches any tuple here. heading is the nearest preceding ## heading from the source markdown.",
+  "queries": [
+    {
+      "q": "东南亚移动游戏市场 2025 年规模和增长率",
+      "relevant": [{ "source": "sea-mobile-2025.md", "heading": "大盘规模" }]
+    },
+    {
+      "q": "印尼玩家用什么电子钱包付费",
+      "relevant": [
+        { "source": "sea-mobile-2025.md", "heading": "付费习惯与渠道" },
+        { "source": "payment-localization.md", "heading": "支付方式分布（按区域）" }
+      ]
+    },
+    {
+      "q": "Mobile Legends 和 Arena of Valor 哪个用户多",
+      "relevant": [
+        { "source": "sea-mobile-2025.md", "heading": "主流玩法品类" },
+        { "source": "moba-category.md", "heading": "头部产品对比" }
+      ]
+    },
+    {
+      "q": "王者荣耀的商业化模式怎么设计的",
+      "relevant": [
+        { "source": "moba-category.md", "heading": "头部产品对比" },
+        { "source": "moba-category.md", "heading": "商业化机制深度" }
+      ]
+    },
+    {
+      "q": "中国版号申请要多久",
+      "relevant": [{ "source": "china-version-policy.md", "heading": "版号节奏" }]
+    },
+    {
+      "q": "未成年人防沉迷的具体时段限制",
+      "relevant": [{ "source": "china-version-policy.md", "heading": "防沉迷" }]
+    },
+    {
+      "q": "抽卡概率必须公示吗",
+      "relevant": [{ "source": "china-version-policy.md", "heading": "内容审查重点" }]
+    },
+    {
+      "q": "进入沙特市场需要哪些合规牌照",
+      "relevant": [{ "source": "china-version-policy.md", "heading": "出海合规对照" }]
+    },
+    {
+      "q": "苹果 App Store 抽成多少",
+      "relevant": [{ "source": "china-version-policy.md", "heading": "平台分发抽成" }]
+    },
+    {
+      "q": "天美工作室都有哪些产品",
+      "relevant": [{ "source": "timi-context.md", "heading": "核心产品矩阵" }]
+    },
+    {
+      "q": "天美 J 工作室是什么意思",
+      "relevant": [{ "source": "timi-context.md", "heading": "组织结构" }]
+    },
+    {
+      "q": "王者荣耀世界什么时候上线",
+      "relevant": [
+        { "source": "timi-context.md", "heading": "核心产品矩阵" },
+        { "source": "timi-context.md", "heading": "战略关切点（推断）" }
+      ]
+    },
+    {
+      "q": "Arena of Valor 在东南亚的份额怎么样",
+      "relevant": [
+        { "source": "timi-context.md", "heading": "战略关切点（推断）" },
+        { "source": "moba-category.md", "heading": "头部产品对比" }
+      ]
+    },
+    {
+      "q": "在东南亚做买量 TikTok 和 Meta 哪个 CPM 低",
+      "relevant": [{ "source": "payment-localization.md", "heading": "买量渠道（2025 SEA 视角）" }]
+    },
+    {
+      "q": "Xsolla 是干什么的",
+      "relevant": [{ "source": "payment-localization.md", "heading": "接入策略" }]
+    },
+    {
+      "q": "MOBA 手游单局时长变化趋势",
+      "relevant": [{ "source": "moba-category.md", "heading": "玩法演进趋势" }]
+    },
+    {
+      "q": "MOBA 产品要不要做电竞",
+      "relevant": [
+        { "source": "moba-category.md", "heading": "进入新市场的关键决策点" },
+        { "source": "sea-mobile-2025.md", "heading": "电竞与运营护城河" }
+      ]
+    },
+    {
+      "q": "在印尼发行游戏要注意什么文化禁忌",
+      "relevant": [{ "source": "payment-localization.md", "heading": "本地化避坑清单" }]
+    },
+    {
+      "q": "MPL Indonesia 是什么 奖金多少",
+      "relevant": [{ "source": "sea-mobile-2025.md", "heading": "电竞与运营护城河" }]
+    },
+    {
+      "q": "欧盟 DSA 对游戏出海有什么影响",
+      "relevant": [{ "source": "china-version-policy.md", "heading": "出海合规对照" }]
+    },
+    {
+      "q": "巴西玩家用什么方式付费",
+      "relevant": [{ "source": "payment-localization.md", "heading": "拉美" }]
+    },
+    {
+      "q": "王者荣耀有多少英雄",
+      "relevant": [
+        { "source": "moba-category.md", "heading": "玩法演进趋势" },
+        { "source": "moba-category.md", "heading": "头部产品对比" }
+      ]
+    }
+  ]
+}

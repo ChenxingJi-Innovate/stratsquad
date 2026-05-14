@@ -1,0 +1,228 @@
+{
+  "chunks": [
+    {
+      "id": "china-version-policy.md#0",
+      "source": "china-version-policy.md",
+      "heading": "版号节奏",
+      "text": "国家新闻出版署（NPPA）2025 年累计下发版号约 1180 个（截至 11 月），节奏保持 2024 年的\"每月一批，每批 100-110 个\"。其中进口游戏版号占比约 8%，国产 92%。\n\n申请到下发的平均周期约 6-9 个月，部分大厂内容因合规审查更细，可能延长到 12 个月以上。腾讯、网易因体量大，单月获批数量稳定在 3-6 个。",
+      "startChar": 30,
+      "endChar": 202
+    },
+    {
+      "id": "china-version-policy.md#1",
+      "source": "china-version-policy.md",
+      "heading": "内容审查重点",
+      "text": "近 18 个月版号被驳回或退回修改的主要原因（按频次）：\n- 未成年人保护合规（防沉迷标识、强制实名、付费上限）\n- 价值观导向（历史人物刻画、文化符号使用、性别表达）\n- 抽卡 / 开箱机制透明度（出货率公示、保底机制）\n- 涉政涉教（宗教元素、地图、敏感词）\n- 暴力 / 恐怖内容尺度\n\n抽卡透明度是 2024 年开始的新强制要求，所有含随机付费道具的游戏必须在游戏内显著位置公示物品出货率，并提供保底机制。",
+      "startChar": 215,
+      "endChar": 422
+    },
+    {
+      "id": "china-version-policy.md#2",
+      "source": "china-version-policy.md",
+      "heading": "防沉迷",
+      "text": "2021 年起的\"830 政策\"持续执行：未成年人每周仅可在周五 / 周六 / 周日及法定节假日的 20:00-21:00 玩网络游戏。所有游戏必须接入 NPPA 实名系统，对接公安数据。\n\n2024 年起强化的执行点：\n- 人脸识别二次验证（针对实名为成年人但行为可疑账号）\n- 家长监管平台对接\n- 充值上限：8 周岁以下禁充，8-16 岁单月 200 元上限，16-18 岁单月 400 元",
+      "startChar": 432,
+      "endChar": 630
+    },
+    {
+      "id": "china-version-policy.md#3",
+      "source": "china-version-policy.md",
+      "heading": "出海合规对照",
+      "text": "中国厂商出海必须熟悉的几个海外合规框架：\n\n**韩国 GRAC（游戏物管理委员会）**\n- 所有游戏需在韩国分级评定\n- 18+ 内容需在韩国 publisher / 当地法人申报\n- 抽卡机制信息披露要求严于中国\n\n**印尼 PSE（电子系统提供者）备案**\n- 2022 年起强制所有运营 in Indonesia 的数字服务在 Kominfo 备案\n- 未备案可能被封 IP / 应用商店下架\n- 涉及用户数据收集需向 Kominfo 申报\n\n**沙特 GAMES Committee**\n- 2024 年新设，所有进入沙特市场游戏需评级\n- 内容审查严格（伊斯兰教义、女性形象、酒精博彩元素）\n\n**欧盟 DSA（数字服务法）**\n- 2024-02 起对所有面向欧盟用户的平台生效\n- 算法推荐透明度、内容审核报告义务\n- 罚款最高营业额 6%\n\n**美国 COPPA + 各州法案**\n- 13 岁以下儿童数据保护\n- 加州 / 弗吉尼亚 / 科罗拉多等州的独立隐私法",
+      "startChar": 643,
+      "endChar": 1083
+    },
+    {
+      "id": "china-version-policy.md#4",
+      "source": "china-version-policy.md",
+      "heading": "平台分发抽成",
+      "text": "苹果 App Store：30%（小开发者计划 15%）。在 2023 年欧盟 DMA 压力下，欧盟区允许侧载和第三方支付通道，但其他区域仍维持 30%。\n\nGoogle Play：30%。但 2024 年起在韩国 / 印度允许第三方支付（手续费 26%）。\n\n国内安卓应用商店：华为 / 小米 / OPPO / vivo / 应用宝等渠道历史上 30-50% 不等。2024 年部分头部产品（如米哈游）成功绕过部分商店做\"官方版本\"分发，但需要承担更高获客成本。",
+      "startChar": 1096,
+      "endChar": 1328
+    },
+    {
+      "id": "china-version-policy.md#5",
+      "source": "china-version-policy.md",
+      "heading": "给天美的关键提示",
+      "text": "- 任何新产品必须把版号申请前置到立项后 2 个月内启动，配合内部合规审查\n- 出海产品需在立项时同步规划海外发行合规框架（至少 5 个主要市场）\n- 抽卡机制设计需提前考虑透明度强制要求，避免后期返工\n- 海外区域的版号 / 牌照需要专门的法务团队跟进，外包成本约每市场 5-15 万美元 / 年",
+      "startChar": 1343,
+      "endChar": 1492
+    },
+    {
+      "id": "moba-category.md#0",
+      "source": "moba-category.md",
+      "heading": "全球大盘",
+      "text": "MOBA 手游全球年流水约 95 亿美元，占移动游戏整体 12%。中国大陆约 38%（王者荣耀单产品超过 30 亿美元），东南亚 14%，拉美 11%，北美 9%，欧洲 8%，其他 20%。",
+      "startChar": 30,
+      "endChar": 125
+    },
+    {
+      "id": "moba-category.md#1",
+      "source": "moba-category.md",
+      "heading": "头部产品对比",
+      "text": "**王者荣耀（腾讯天美 / 中国）**\n- 上线时间：2015-11\n- DAU：约 1 亿（中国大陆为主）\n- ARPU 估算：50-70 元 / 月\n- 核心差异化：5v5 三路 + 中文文化 IP 联动（敦煌、京剧、故宫）\n- 商业化：皮肤为主（占流水 80%+），不卖英雄强度\n\n**Mobile Legends: Bang Bang（Moonton / 字节）**\n- 上线时间：2016-07\n- DAU：约 8000 万（SEA 70%+，拉美 20%）\n- ARPU 估算：3-5 美元 / 月\n- 核心差异化：低端机适配最优、英雄发布节奏快（每年 20+）\n- 商业化：皮肤 + 通行证，皮肤池子设计偏 gacha 化\n\n**Arena of Valor（腾讯天美 / 海外版王者荣耀）**\n- 上线时间：2017-09\n- DAU：约 3500 万（SEA 60%，拉美 30%）\n- ARPU 估算：4-6 美元 / 月\n- 核心差异化：与王者荣耀共用 KPL 体系的衍生赛事、漫威联动\n- 商业化：与王者荣耀类似",
+      "startChar": 138,
+      "endChar": 606
+    },
+    {
+      "id": "moba-category.md#2",
+      "source": "moba-category.md",
+      "heading": "头部产品对比",
+      "text": "：4-6 美元 / 月\n- 核心差异化：与王者荣耀共用 KPL 体系的衍生赛事、漫威联动\n- 商业化：与王者荣耀类似\n\n**League of Legends: Wild Rift（拳头 / 腾讯）**\n- 上线时间：2020-10\n- DAU：约 2000 万\n- ARPU 估算：5-8 美元 / 月\n- 核心差异化：端游 IP 平移、画质最高\n- 商业化：偏端游模式（皮肤偏精品、通行证）",
+      "startChar": 548,
+      "endChar": 745
+    },
+    {
+      "id": "moba-category.md#3",
+      "source": "moba-category.md",
+      "heading": "玩法演进趋势",
+      "text": "2023-2025 年 MOBA 品类的几个明显变化：\n- **节奏加快**：单局时长从平均 18 分钟压缩到 12-14 分钟，迎合短时游戏需求\n- **角色丰富化**：王者英雄已超 130 个，MLBB 超 130 个，AoV 超 120 个，发布节奏加快倒逼平衡性挑战加剧\n- **AI 智能匹配**：用 ELO + 队友质量 + 行为标签的复合匹配模型，缩短等待时间到 30 秒内\n- **新模式探索**：王者荣耀做了\"无限乱斗\"（ARAM 风格）、\"五军对决\"（5v5 街垒）、\"梦境大乱斗\"等模式探索\n- **跨端云游戏**：王者荣耀已支持云游戏低配机入场，Wild Rift 探索 PC + 移动跨端",
+      "startChar": 758,
+      "endChar": 1065
+    },
+    {
+      "id": "moba-category.md#4",
+      "source": "moba-category.md",
+      "heading": "商业化机制深度",
+      "text": "MOBA 品类的主流商业化模型由 3 个层级构成：\n- **L1 流量层**：通行证（月 / 季），约 30-60 元，付费率最高，付费转化 10-15%\n- **L2 内容层**：限定皮肤（包括联动皮肤），单价 60-160 元，付费率约 4-7%\n- **L3 收藏层**：荣耀典藏 / 至臻 / 史诗皮肤大池子，单池子流水可达千万元级，付费率不到 1% 但 ARPPU 极高\n\n王者荣耀的\"荣耀典藏\"皮肤定价 188-288 元，单皮肤月流水可达 8000 万元以上，是行业内最成功的\"少数人撑起大盘\"案例。",
+      "startChar": 1079,
+      "endChar": 1336
+    },
+    {
+      "id": "moba-category.md#5",
+      "source": "moba-category.md",
+      "heading": "进入新市场的关键决策点",
+      "text": "如果新厂商要做 MOBA 品类，关键 4 个决策点：\n1. **不与 MLBB / AoV 正面对抗**：差异化必须在画质、IP、玩法节奏、社交机制至少一项\n2. **选择\"被忽视\"区域起步**：MLBB 在 SEA 难撼动，但拉美西南部、中东、非洲尚有空间\n3. **电竞投入决心**：年度赛事预算至少 200 万美元起步，否则用户粘性留不住\n4. **2-3 年承诺**：MOBA 是长线品类，6 个月内难以判断成败，需要财务和高层提前对齐",
+      "startChar": 1354,
+      "endChar": 1576
+    },
+    {
+      "id": "payment-localization.md#0",
+      "source": "payment-localization.md",
+      "heading": "支付方式分布（按区域）",
+      "text": "不同区域玩家的偏好支付方式差异极大，做本地化决定了能不能把流量真正\"转化成钱\"。\n\n### 东南亚\n\n| 国家 | 主流支付（覆盖度 60%+） | 次要支付 |\n|------|------------------------|----------|\n| 印尼 | GoPay, OVO, DANA, ShopeePay | 银行转账（Mandiri / BCA Virtual Account）、运营商代扣（Telkomsel） |\n| 越南 | Momo Pay | ZaloPay, ViettelPay, Visa/MasterCard |\n| 菲律宾 | GCash, Maya | 7-Eleven 充值卡, GrabPay |\n| 泰国 | True Money, Rabbit LINE Pay | PromptPay（QR）、信用卡 |\n| 马来西亚 | Boost, Touch'n Go eWallet | 信用卡, FPX 银行转账 |\n| 新加坡 | 信用卡, GrabPay | PayNow（QR） |",
+      "startChar": 33,
+      "endChar": 500
+    },
+    {
+      "id": "payment-localization.md#1",
+      "source": "payment-localization.md",
+      "heading": "支付方式分布（按区域）",
+      "text": "llet | 信用卡, FPX 银行转账 |\n| 新加坡 | 信用卡, GrabPay | PayNow（QR） |\n\n### 中东\n\n- **沙特 / 阿联酋 / 卡塔尔**：STC Pay（沙特电信钱包）、信用卡、运营商代扣（Mobily / Etisalat）\n- **埃及**：Fawry 现金充值占 50%+，Vodafone Cash 次之\n- **土耳其**：本地银行卡（Garanti / Akbank）、TosPay\n\n### 拉美\n\n- **巴西**：Pix（即时支付）覆盖 70%+，Boleto 现金充值占长尾，信用卡（含分期）\n- **墨西哥**：OXXO 便利店现金充值占 35%，信用卡 + SPEI 转账\n- **阿根廷**：MercadoPago（含 12 期分期）\n\n### 日韩\n\n- **日本**：信用卡（VISA / JCB / AMEX）、运营商代扣（DoCoMo / au / SoftBank）、PayPay、Apple/Google ID 卡\n- **韩国**：KaKaoPay、Naver Pay、信用卡、Toss Pay\n\n### 北美 / 欧洲\n\n- 信用卡为主（占 70%+）\n- 数字钱包补充：PayPal, Apple Pay, Google Pay\n- 礼品卡分发：Walmart, Target, Tesco, Carrefour 等",
+      "startChar": 442,
+      "endChar": 1042
+    },
+    {
+      "id": "payment-localization.md#2",
+      "source": "payment-localization.md",
+      "heading": "接入策略",
+      "text": "主流游戏支付聚合 SDK：\n- **Xsolla**：覆盖 200+ 国家，700+ 支付方式，抽成 5-10%\n- **Adyen**：企业级，覆盖广，定价透明，适合大体量\n- **Codapay**：东南亚 + 中东，本地化深，抽成 2-5%\n- **Skrill / Razer Gold**：游戏行业特化的预付费钱包\n\n通常做法是：\n1. 先用 Xsolla 或 Codapay 快速覆盖 80% 支付方式\n2. 上线后 6 个月跑数据，发现大流量国家再单独接本地支付（如印尼直接接 GoPay SDK，省抽成）",
+      "startChar": 1053,
+      "endChar": 1313
+    },
+    {
+      "id": "payment-localization.md#3",
+      "source": "payment-localization.md",
+      "heading": "买量渠道（2025 SEA 视角）",
+      "text": "按 CPM 性价比从高到低：\n\n| 渠道 | SEA CPM (USD) | 适用品类 | 备注 |\n|------|---------------|---------|------|\n| TikTok Ads | 0.8-2.5 | 休闲 / 中度 / MOBA | 增长最快，2024-2025 SEA 投放占比超过 Meta |\n| Meta (Facebook + IG) | 1.5-4.0 | 全品类 | 老牌主力，定向工具最成熟 |\n| Google Ads (UAC) | 2.0-5.0 | 全品类 | 算法黑盒程度高，预算门槛低 |\n| AppLovin | 2.5-6.0 | 休闲为主 | 视频创意主导 |\n| Unity Ads | 2.0-4.5 | 休闲 / 中度 | 与 Unity 引擎深度集成 |\n| 本地 KOL | 视情况 | 全品类，MOBA / 二次元尤佳 | 印尼 Tiktoker 万粉报价 50-150 美元 |\n| Twitch / YouTube 主播 | 视情况 | 重度 / 电竞 | 单主播日预算 500-5000 美元 |\n\nKOL 投放在 SEA 比传统买量 ROI 平均高 30-50%，但运营成本高（需要本地团队对接、合同管理、效果监测）。建议同时跑 TikTok + 本地 KOL + Meta 三条腿。",
+      "startChar": 1337,
+      "endChar": 1924
+    },
+    {
+      "id": "payment-localization.md#4",
+      "source": "payment-localization.md",
+      "heading": "客服与社区",
+      "text": "- 客服至少印尼语 / 越南语 / 泰语 / 英语四语种，可用 Helpshift / Zendesk + 翻译 API 起步，6 个月后看流量决定是否本地化人工客服\n- 社区运营优先 Discord（拉美 + 西方）、Telegram（中东 + 部分 SEA）、LINE（日 / 泰 / 台）、KakaoTalk（韩）\n- 中东市场建议保留 WhatsApp 客服通道",
+      "startChar": 1936,
+      "endChar": 2121
+    },
+    {
+      "id": "payment-localization.md#5",
+      "source": "payment-localization.md",
+      "heading": "本地化避坑清单",
+      "text": "- 印尼：避免猪 / 酒精相关美术元素（穆斯林人口占 87%）\n- 沙特：女性角色服装需保守，禁止裸露和性暗示\n- 越南：避免与南海主权 / 历史敏感事件相关地图设计\n- 泰国：避免王室元素，红 / 黄色谨慎使用\n- 韩国：抽卡概率公示比中国更严，主播文化深，需配合 Streamer 运营\n- 巴西：注意葡萄牙语（巴西本地）与葡萄牙葡语差异，机翻不可用",
+      "startChar": 2135,
+      "endChar": 2312
+    },
+    {
+      "id": "sea-mobile-2025.md#0",
+      "source": "sea-mobile-2025.md",
+      "heading": "大盘规模",
+      "text": "东南亚（SEA）移动游戏市场 2025 年规模预计 76 亿美元，年增长约 8.3%，远高于全球游戏市场 4% 左右的平均水平。其中印尼贡献约 35% 份额、越南 22%、菲律宾 14%、泰国 13%、马来西亚 9%、新加坡 7%。GDP 总量上 SEA 6 国合计约 3.6 万亿美元，玩家人口超过 2.7 亿，渗透率 38%。\n\n人均移动游戏 ARPU 约 4.2 美元，付费率 6.8%。新加坡 ARPU 最高（接近 18 美元），印尼最低（约 2.1 美元），但印尼用户基数大、付费深度结构正在拉长。",
+      "startChar": 33,
+      "endChar": 287
+    },
+    {
+      "id": "sea-mobile-2025.md#1",
+      "source": "sea-mobile-2025.md",
+      "heading": "主流玩法品类",
+      "text": "按 2025 Q3 流水排名，前 5 个品类为：MOBA（25%）、休闲三消（17%）、SLG（15%）、射击（13%）、二次元（9%）。MOBA 仍是大盘第一，Mobile Legends: Bang Bang（MLBB，Moonton）月活约 1.1 亿，Arena of Valor（AoV，腾讯）月活 5500 万。两者合计市占 SEA MOBA 品类超过 80%。\n\n休闲三消由 Royal Match / Candy Crush 主导。SLG 由 Lords Mobile（IGG）、War and Order、State of Survival（FunPlus）占据。射击品类 PUBG Mobile（Tencent / Krafton）+ Free Fire（Garena）持续双雄。二次元由原神、崩坏：星穹铁道、Honkai: Star Rail 拉动。",
+      "startChar": 300,
+      "endChar": 686
+    },
+    {
+      "id": "sea-mobile-2025.md#2",
+      "source": "sea-mobile-2025.md",
+      "heading": "付费习惯与渠道",
+      "text": "主流支付方式按区域分化：\n- 印尼：GoPay / OVO / DANA / ShopeePay 四大电子钱包，合计占移动游戏付费 60%+\n- 越南：Momo Pay 占绝对主导，运营商代扣（Viettel / Mobifone）补充长尾\n- 菲律宾：GCash / Maya（前 PayMaya）占主导\n- 泰国：True Money / Rabbit LINE Pay 占主导\n- 马来：Boost / Touch n Go eWallet\n- 新加坡：信用卡 + GrabPay，结构最接近发达市场\n\n应用商店分布：Google Play 占 SEA 安卓游戏分发 80%+，iOS 占整体收入约 35%（用户少但 ARPU 高）。第三方安卓商店在印尼 / 越南有 10-15% 长尾。",
+      "startChar": 700,
+      "endChar": 1047
+    },
+    {
+      "id": "sea-mobile-2025.md#3",
+      "source": "sea-mobile-2025.md",
+      "heading": "电竞与运营护城河",
+      "text": "Moonton 旗下 MPL（Mobile Legends Professional League）在印尼 / 菲律宾 / 越南 / 缅甸 / 马来 / 新加坡 都有本地赛事，年度奖金池累计超 500 万美元。MPL 印尼站为旗舰，决赛单场观众峰值 350 万。Tencent 旗下 AIC（Arena of Valor International Championship）规模次之。这两个赛事体系是 MOBA 在 SEA 的核心护城河，新进入者难以在短期内复制。",
+      "startChar": 1062,
+      "endChar": 1295
+    },
+    {
+      "id": "sea-mobile-2025.md#4",
+      "source": "sea-mobile-2025.md",
+      "heading": "给中国发行商的启示",
+      "text": "- SEA 用户付费深度低但活跃度高，要把 retention（D30 / D60）作为首要指标，而非 D1 ROAS\n- 必须做本地化客服（至少印尼语 / 越南语 / 泰语三语种），用 SaaS 客服平台（如 Helpshift）可以摊薄成本\n- KOL 投放比传统买量 ROI 高 30-50%（数据来自 AppLovin 2025 SEA 报告）\n- 电竞投入是 MOBA / 射击品类的必选项，否则用户粘性留不住",
+      "startChar": 1311,
+      "endChar": 1521
+    },
+    {
+      "id": "timi-context.md#0",
+      "source": "timi-context.md",
+      "heading": "工作室定位",
+      "text": "天美工作室群（TiMi Studio Group）是腾讯互娱旗下游戏工作室群之一，与光子工作室群（PUBG Mobile / 和平精英）并称腾讯游戏两大支柱。2025 年估算全球年流水超 100 亿美元，长期位居全球游戏发行商收入榜前 3。",
+      "startChar": 30,
+      "endChar": 150
+    },
+    {
+      "id": "timi-context.md#1",
+      "source": "timi-context.md",
+      "heading": "核心产品矩阵",
+      "text": "| 产品 | 上线时间 | 全球状态 | 关键数据 |\n|------|---------|---------|---------|\n| 王者荣耀 | 2015-11 | 中国大陆 + 港澳台 | DAU 约 1 亿，年流水 200+ 亿元 |\n| Arena of Valor | 2017-09 | 海外 50+ 区域 | DAU 约 3500 万，主战场 SEA + 拉美 |\n| 王者荣耀世界（开放世界） | 2025-下半年（预期） | 中国 + 国际 | 立项 4 年，UE5 制作 |\n| Honor of Kings World | 同上 | 国际版 | 仍处于测试阶段 |\n| Pokemon Unite | 2021-07 | 全球 | 与任天堂 / The Pokemon Company 合作 |\n| Call of Duty: Mobile | 2019-10 | 全球 | 与 Activision 联合开发 |\n| 暗区突围 | 2022 | 中国 + 国际版 | 硬核 PvPvE 射击 |\n| 一人之下 | 2023 | 中国 | 国漫 IP 改编 RPG |\n| 三角洲行动 | 2024-09 | 中国 + 国际 | 射击 + 大逃杀 |",
+      "startChar": 163,
+      "endChar": 701
+    },
+    {
+      "id": "timi-context.md#2",
+      "source": "timi-context.md",
+      "heading": "组织结构",
+      "text": "天美下设多个 J 工作室（J1 / J3 / J5 / J6 / J9 等编号系统），每个 J 工作室独立立项，向天美管理委员会汇报。J3 工作室是王者荣耀核心团队，J9 是王者荣耀世界（开放世界）团队，J5 主要做海外项目。\n\n策略团队（本 JD 所在团队）属于天美管理层下属的横向支撑团队，与各 J 工作室协同，提供：\n- 立项前的赛道研究与可行性评估\n- 上线后的竞品监测与战略调整建议\n- 高层决策所需的行业 brief\n- 跨工作室的战略协同（避免内部撞车）",
+      "startChar": 712,
+      "endChar": 946
+    },
+    {
+      "id": "timi-context.md#3",
+      "source": "timi-context.md",
+      "heading": "战略关切点（推断）",
+      "text": "基于公开信息和 2024-2025 年的动态，天美当前的几个战略关切：\n\n**1. 王者荣耀世界的成败**\n这是天美 4 年级别投入的开放世界产品，对标米哈游\"原神 + 崩坏星穹铁道\"双产品矩阵。上线后能否承接王者荣耀的用户存量、能否在二次元 + 开放世界品类站稳，将决定天美中长期增长曲线。\n\n**2. AoV 在 SEA 的份额回升**\n2018-2020 年 AoV 一度在 SEA 与 MLBB 平分秋色，但 2021 年后逐步被 MLBB 拉开差距。当前的护城河更多在拉美。能否在 SEA 重新拿回份额，是 J5 工作室的核心 KPI。\n\n**3. 射击品类的版图扩张**\n三角洲行动是天美在射击品类的新尝试。与光子（和平精英）形成腾讯内部双轨：光子做大众化 BR，天美做硬核 PvPvE / 战术射击。\n\n**4. AI 工具链建设**\n2024 年起天美明显加大 AI 投入，包括美术资产生成（Stable Diffusion 微调）、NPC 智能（基于 LLM 的对话系统）、策划提效工具（这是 AI 策略团队的主战场）。\n\n**5. 人才与组织效率**\n内部存在多个 J 工作室间的资源协调、立项竞争问题。策略团队的\"横向协同\"职责就是帮助管理层做出\"做什么、不做什么\"的判断。",
+      "startChar": 962,
+      "endChar": 1510
+    },
+    {
+      "id": "timi-context.md#4",
+      "source": "timi-context.md",
+      "heading": "加入策略团队意味着什么",
+      "text": "策略团队不是游戏策划（gameplay designer）。它是给高层做战略支撑的内部咨询团队，定位类似麦肯锡 / BCG 的 in-house 战略组。日常工作包括：\n\n- 行业研究：竞品深度拆解、品类研究、玩家行为洞察、技术趋势\n- 立项支持：给新立项做 greenlight 评估、市场可行性分析\n- 战略 brief：定期向天美管理委员会输出策略 brief\n- AI 工具：将上述工作 AI 化（这就是本 JD 的核心职责）\n\n实习生在这个团队的典型产出：\n- 协助资深策略师做行业研究和数据搜集\n- 撰写 / 协助撰写策略文档与 PPT\n- 维护和升级 AI 工具（这是 JD 第三条职责）\n- 跨部门沟通（与各 J 工作室策划、市场、商业化等团队对接）",
+      "startChar": 1528,
+      "endChar": 1861
+    }
+  ]
+}
