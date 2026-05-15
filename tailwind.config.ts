@@ -1,97 +1,82 @@
 import type { Config } from "tailwindcss"
 
-// Tokens adapted from Pinterest Gestalt design system
-// https://github.com/pinterest/gestalt
-// Spacing & rounding follow strict 4px grid; typography limited to 6 sizes; colors map to Gestalt's named palettes.
+// Track 2 · Industrial Console
+// Sources: Vercel Geist (https://vercel.com/geist) + IBM Carbon (https://carbondesignsystem.com/) + Linear
+// See workspace DESIGN.md for the full track spec.
 
 const config: Config = {
   content: ["./app/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     fontFamily: {
       sans: [
+        "Inter",
         "-apple-system",
         "BlinkMacSystemFont",
-        "PingFang SC",
-        "Hiragino Kaku Gothic Pro",
+        "Segoe UI Variable",
         "Segoe UI",
+        "PingFang SC",
+        "Hiragino Sans",
         "Roboto",
         "Helvetica Neue",
-        "Arial",
         "sans-serif",
       ],
-      display: [
-        "ui-serif",
-        "'New York'",
-        "'Iowan Old Style'",
-        "Georgia",
-        "'Times New Roman'",
-        "serif",
-      ],
       mono: [
-        "SFMono-Medium",
+        "Geist Mono",
         "SF Mono",
-        "Segoe UI Mono",
-        "Roboto Mono",
+        "SFMono-Medium",
+        "JetBrains Mono",
         "Menlo",
         "Consolas",
+        "Roboto Mono",
         "monospace",
       ],
     },
     fontSize: {
       "100": ["12px", { lineHeight: "1.5" }],
       "200": ["14px", { lineHeight: "1.5" }],
-      "300": ["16px", { lineHeight: "1.6" }],
-      "400": ["20px", { lineHeight: "1.4" }],
-      "500": ["28px", { lineHeight: "1.25" }],
-      "600": ["36px", { lineHeight: "1.15" }],
+      "300": ["15px", { lineHeight: "1.6" }],
+      "400": ["18px", { lineHeight: "1.4" }],
+      "500": ["24px", { lineHeight: "1.25" }],
+      "600": ["32px", { lineHeight: "1.15" }],
     },
     fontWeight: {
       normal: "400",
+      medium: "500",
       semibold: "600",
       bold: "700",
     },
     extend: {
       colors: {
-        pushpin: {
-          0: "#FFF7F7",
-          50: "#FFEBEB",
-          100: "#FFE0E0",
-          200: "#FCBBBB",
-          300: "#F47171",
-          400: "#EB4242",
-          450: "#E60023",
-          500: "#CC0000",
-          600: "#B60000",
-          700: "#9B0000",
-          800: "#800000",
-          900: "#660000",
+        canvas: "#0A0A0A",
+        surface: "#111111",
+        "surface-2": "#1A1A1A",
+        "surface-3": "#222222",
+        hairline: "#2E2E2E",
+        "hairline-strong": "#3D3D3D",
+        ink: {
+          primary: "#EDEDED",
+          secondary: "#A1A1A1",
+          tertiary: "#666666",
+          inverse: "#0A0A0A",
         },
-        roboflow: {
-          50: "#F9F9F9",
-          100: "#F1F1F1",
-          200: "#E9E9E9",
-          300: "#CDCDCD",
-          400: "#A5A5A5",
-          500: "#767676",
-          550: "#5F5F5F",
-          600: "#4A4A4A",
-          700: "#2B2B2B",
-          800: "#191919",
+        signal: {
+          blue: "#0070F3",
+          "blue-soft": "#0F2540",
+          "blue-bright": "#3291FF",
+          green: "#00DC82",
+          "green-soft": "#0B2820",
+          amber: "#F5A623",
+          "amber-soft": "#2A1F0A",
+          red: "#FF4444",
+          "red-soft": "#2A1010",
         },
-        cosmicore: "#111111",
-        mochimalist: "#FFFFFF",
       },
       borderRadius: {
         "0": "0px",
-        "100": "4px",
-        "200": "8px",
-        "300": "12px",
-        "400": "16px",
-        "500": "20px",
-        "600": "24px",
-        "700": "28px",
-        "800": "32px",
-        pill: "999px",
+        "2": "2px",
+        "4": "4px",
+        "6": "6px",
+        "8": "8px",
       },
       spacing: {
         "100": "4px",
@@ -111,44 +96,36 @@ const config: Config = {
         "1500": "60px",
         "1600": "64px",
       },
-      boxShadow: {
-        floating: "0 1px 2px rgba(17,17,17,0.04), 0 8px 24px rgba(17,17,17,0.06), inset 0 1px 0 rgba(255,255,255,0.6)",
-        raised: "0 2px 4px rgba(17,17,17,0.06), 0 12px 32px rgba(17,17,17,0.08), inset 0 1px 0 rgba(255,255,255,0.7)",
-        lift: "0 4px 8px rgba(17,17,17,0.08), 0 24px 48px rgba(17,17,17,0.10), inset 0 1px 0 rgba(255,255,255,0.7)",
-        glass: "0 8px 32px rgba(17,17,17,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+      transitionDuration: {
+        "150": "150ms",
+        "200": "200ms",
       },
       transitionTimingFunction: {
-        apple: "cubic-bezier(0.16, 1, 0.3, 1)",
+        console: "cubic-bezier(0.4, 0, 0.2, 1)",
       },
       keyframes: {
-        fadeUp: {
-          "0%": { opacity: "0", transform: "translateY(12px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
+        scanline: {
+          "0%": { backgroundPositionY: "0%" },
+          "100%": { backgroundPositionY: "200%" },
         },
-        floatA: {
-          "0%, 100%": { transform: "rotate(-3deg) translateY(0)" },
-          "50%": { transform: "rotate(-3deg) translateY(-6px)" },
+        blink: {
+          "0%, 50%": { opacity: "1" },
+          "51%, 100%": { opacity: "0" },
         },
-        floatB: {
-          "0%, 100%": { transform: "rotate(2deg) translateY(0)" },
-          "50%": { transform: "rotate(2deg) translateY(-8px)" },
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
         },
-        floatC: {
-          "0%, 100%": { transform: "rotate(-2deg) translateY(0)" },
-          "50%": { transform: "rotate(-2deg) translateY(-5px)" },
-        },
-        pulseRing: {
-          "0%": { boxShadow: "0 0 0 0 rgba(230,0,35,0.45)" },
-          "70%": { boxShadow: "0 0 0 12px rgba(230,0,35,0)" },
-          "100%": { boxShadow: "0 0 0 0 rgba(230,0,35,0)" },
+        pulseDot: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.4" },
         },
       },
       animation: {
-        fadeUp: "fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
-        floatA: "floatA 6s ease-in-out infinite",
-        floatB: "floatB 7s ease-in-out infinite",
-        floatC: "floatC 8s ease-in-out infinite",
-        pulseRing: "pulseRing 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite",
+        scanline: "scanline 2s linear infinite",
+        blink: "blink 1s steps(2, start) infinite",
+        fadeIn: "fadeIn 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+        pulseDot: "pulseDot 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
       },
     },
   },

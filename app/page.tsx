@@ -1,27 +1,27 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { marked } from 'marked'
 import {
-  ArrowRight, Sparkles, Loader2, Check, AlertCircle, Brain, Target, TrendingUp,
+  Loader2, AlertCircle, Brain, Target, TrendingUp,
   Globe, ShieldAlert, Scale, FileText, RotateCw, Download, Copy, ChevronDown,
-  Database, Search,
+  Database, Terminal, Play, Square, Activity,
 } from 'lucide-react'
 import type { AgentName, StreamEvent, Subtask, JudgeScore, SubAgent, FullResult, RagHit } from '../lib/types'
 import { AGENT_LABEL_ZH, JUDGE_PASS_THRESHOLD } from '../lib/types'
 
 type AgentStatus = 'idle' | 'queued' | 'running' | 'done' | 'retry'
-type AgentState = { status: AgentStatus; content: string }
+type AgentState = { status: AgentStatus; content: string; startedAt?: number; finishedAt?: number; tokens: number }
 
 const AGENT_ORDER: AgentName[] = ['orchestrator', 'competitor', 'trend', 'market', 'risk', 'judge', 'composer']
 
 const AGENT_ICON: Record<AgentName, React.ReactNode> = {
-  orchestrator: <Brain className="w-4 h-4" strokeWidth={1.6} />,
-  competitor: <Target className="w-4 h-4" strokeWidth={1.6} />,
-  trend: <TrendingUp className="w-4 h-4" strokeWidth={1.6} />,
-  market: <Globe className="w-4 h-4" strokeWidth={1.6} />,
-  risk: <ShieldAlert className="w-4 h-4" strokeWidth={1.6} />,
-  judge: <Scale className="w-4 h-4" strokeWidth={1.6} />,
-  composer: <FileText className="w-4 h-4" strokeWidth={1.6} />,
+  orchestrator: <Brain className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  competitor: <Target className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  trend: <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  market: <Globe className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  risk: <ShieldAlert className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  judge: <Scale className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  composer: <FileText className="w-3.5 h-3.5" strokeWidth={1.5} />,
 }
 
 const SAMPLE_QUESTION = '评估 2026 下半年发布一款 MOBA 手游进入东南亚市场（重点印尼 / 越南 / 菲律宾）的窗口期、竞品壁垒、商业化路径与主要政策风险，并给出 90 天落地动作清单。'
@@ -49,10 +49,12 @@ export default function Home() {
   const [scores, setScores] = useState<JudgeScore[]>([])
   const [retries, setRetries] = useState<SubAgent[]>([])
   const [brief, setBrief] = useState('')
+  const [runStart, setRunStart] = useState<number | null>(null)
+  const [now, setNow] = useState(Date.now())
   const abortRef = useRef<AbortController | null>(null)
 
   function initAgents(): Record<AgentName, AgentState> {
-    return Object.fromEntries(AGENT_ORDER.map(a => [a, { status: 'idle', content: '' }])) as Record<AgentName, AgentState>
+    return Object.fromEntries(AGENT_ORDER.map(a => [a, { status: 'idle', content: '', tokens: 0 }])) as Record<AgentName, AgentState>
   }
 
   function resetRun() {
@@ -60,10 +62,18 @@ export default function Home() {
     setPlan([]); setRagHits([]); setRagQuery(''); setScores([]); setRetries([]); setBrief(''); setError('')
   }
 
+  // tick at 100ms while running for a live elapsed counter
+  useEffect(() => {
+    if (!running) return
+    const t = setInterval(() => setNow(Date.now()), 100)
+    return () => clearInterval(t)
+  }, [running])
+
   async function run() {
     if (!question.trim() || running) return
     resetRun()
     setRunning(true)
+    setRunStart(Date.now())
 
     const ctrl = new AbortController()
     abortRef.current = ctrl
@@ -95,7 +105,7 @@ export default function Home() {
           try {
             const ev: StreamEvent = JSON.parse(payload)
             handleEvent(ev)
-          } catch { /* malformed line, skip */ }
+          } catch { /* malformed line */ }
         }
       }
     } catch (e: any) {
@@ -106,20 +116,32 @@ export default function Home() {
     }
   }
 
+  function abort() {
+    abortRef.current?.abort()
+    setRunning(false)
+  }
+
   function handleEvent(ev: StreamEvent) {
     switch (ev.type) {
       case 'agent_start':
-        setAgents(a => ({ ...a, [ev.agent]: { status: 'running', content: '' } }))
+        setAgents(a => ({ ...a, [ev.agent]: { ...a[ev.agent], status: 'running', content: '', startedAt: Date.now(), tokens: 0 } }))
         break
       case 'agent_token':
-        setAgents(a => ({ ...a, [ev.agent]: { status: 'running', content: a[ev.agent].content + ev.delta } }))
+        setAgents(a => ({
+          ...a,
+          [ev.agent]: {
+            ...a[ev.agent],
+            status: 'running',
+            content: a[ev.agent].content + ev.delta,
+            tokens: a[ev.agent].tokens + 1,
+          },
+        }))
         break
       case 'agent_done':
-        setAgents(a => ({ ...a, [ev.agent]: { status: 'done', content: ev.content } }))
+        setAgents(a => ({ ...a, [ev.agent]: { ...a[ev.agent], status: 'done', content: ev.content, finishedAt: Date.now() } }))
         break
       case 'plan':
         setPlan(ev.subtasks)
-        // mark sub-agents as queued so the timeline shows pending pills
         setAgents(a => {
           const next = { ...a }
           ;(['competitor', 'trend', 'market', 'risk'] as SubAgent[]).forEach(s => {
@@ -137,7 +159,7 @@ export default function Home() {
         break
       case 'retry':
         setRetries(r => [...r, ev.agent])
-        setAgents(a => ({ ...a, [ev.agent]: { status: 'retry', content: '' } }))
+        setAgents(a => ({ ...a, [ev.agent]: { ...a[ev.agent], status: 'retry', content: '', startedAt: Date.now(), tokens: 0 } }))
         break
       case 'brief':
         setBrief(ev.markdown)
@@ -150,161 +172,162 @@ export default function Home() {
 
   function downloadResult() {
     const result: FullResult = {
-      question,
-      plan,
-      ragHits,
+      question, plan, ragHits,
       outputs: {
-        competitor: agents.competitor.content,
-        trend: agents.trend.content,
-        market: agents.market.content,
-        risk: agents.risk.content,
+        competitor: agents.competitor.content, trend: agents.trend.content,
+        market: agents.market.content, risk: agents.risk.content,
       },
-      scores,
-      brief,
-      retries,
+      scores, brief, retries,
     }
     const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `stratsquad-brief-${Date.now()}.json`
+    a.download = `stratsquad-${Date.now()}.json`
     a.click()
   }
 
-  function copyBrief() {
-    navigator.clipboard.writeText(brief)
-  }
+  function copyBrief() { navigator.clipboard.writeText(brief) }
+
+  const elapsed = runStart ? (now - runStart) / 1000 : 0
+  const totalTokens = AGENT_ORDER.reduce((s, n) => s + agents[n].tokens, 0)
+  const ragSimAvg = ragHits.length > 0 ? ragHits.reduce((s, h) => s + h.score, 0) / ragHits.length : 0
 
   return (
-    <main className="min-h-screen">
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-pushpin-50/50 via-transparent to-transparent" aria-hidden />
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-pill bg-pushpin-100/40 blur-3xl" aria-hidden />
-        <div className="absolute top-60 -left-32 w-[420px] h-[420px] rounded-pill bg-pushpin-50/60 blur-3xl" aria-hidden />
-
-        <div className="relative max-w-6xl mx-auto px-600 sm:px-800 pt-1300 pb-1200 sm:pt-1600">
-          <div className="grid lg:grid-cols-[1.3fr_1fr] gap-1200 items-center">
-            <div className="animate-fadeUp">
-              <div className="inline-flex items-center gap-200 px-300 py-100 rounded-pill bg-mochimalist/80 backdrop-blur-md shadow-glass text-100 font-bold text-pushpin-450 mb-700">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="tracking-[0.18em]">MULTI-AGENT STRATEGY COPILOT</span>
-              </div>
-
-              <h1 className="font-bold tracking-[-0.04em] text-cosmicore leading-[0.95] mb-500" style={{ fontSize: 'clamp(48px, 8vw, 84px)' }}>
-                StratSquad<br />
-                <span className="font-display italic font-normal text-pushpin-450 tracking-[-0.02em]">a squad of agents.</span>
-              </h1>
-
-              <p className="text-400 text-roboflow-700 leading-relaxed max-w-lg mb-300">
-                输入一个游戏战略问题，编排器拆解任务，四位专家 Agent 并行作战，评委打分，终稿合成。
-              </p>
-              <p className="font-display italic text-200 text-roboflow-500 max-w-lg tracking-tight">
-                Orchestrator + 4 sub-agents + judge + composer · powered by DeepSeek V4.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-400 mt-800">
-                <a href="#input" className="inline-flex items-center gap-200 px-500 py-300 rounded-pill bg-cosmicore text-mochimalist text-200 font-semibold transition-all duration-500 ease-apple hover:bg-roboflow-700 hover:shadow-lift hover:-translate-y-0.5">
-                  开始一次推演 <ArrowRight className="w-4 h-4" />
-                </a>
-                <span className="text-100 font-mono text-roboflow-500 hidden sm:block">7 agents · SSE streaming · 评委驱动 retry</span>
-              </div>
-            </div>
-
-            <div className="relative h-[440px] hidden lg:block">
-              <PreviewCard className="absolute top-0 left-0 w-72 animate-floatA" badge="01 编排" badgeColor="bg-roboflow-100/90 backdrop-blur-sm text-roboflow-700" icon={<Brain className="w-3.5 h-3.5" />}>
-                <p className="text-200 text-cosmicore leading-relaxed">把战略问题拆成 4 个子任务，分发给 4 位专家 agent。</p>
-                <p className="text-100 font-mono text-roboflow-400 mt-200 tracking-wider">orchestrator.json</p>
-              </PreviewCard>
-              <PreviewCard className="absolute top-32 right-0 w-72 animate-floatB" badge="02 并行" badgeColor="bg-pushpin-50/90 backdrop-blur-sm text-pushpin-450" icon={<Target className="w-3.5 h-3.5" />}>
-                <div className="space-y-200">
-                  <MiniRow label="竞品" tone="run" />
-                  <MiniRow label="趋势" tone="run" />
-                  <MiniRow label="区域" tone="run" />
-                  <MiniRow label="风险" tone="done" />
-                </div>
-              </PreviewCard>
-              <PreviewCard className="absolute bottom-0 left-12 w-80 animate-floatC" badge="03 评委 / 终稿" badgeColor="bg-pushpin-450 text-mochimalist" icon={<Scale className="w-3.5 h-3.5" />}>
-                <div className="flex items-center gap-300 text-100 font-mono">
-                  <span className="text-pushpin-450 font-bold">证据 82</span>
-                  <span className="text-pushpin-450 font-bold">逻辑 78</span>
-                </div>
-                <p className="text-100 font-mono text-roboflow-500 mt-200">composer → 战略简报.md</p>
-              </PreviewCard>
-            </div>
+    <main className="min-h-screen bg-canvas text-ink-primary">
+      {/* TOP CHROME */}
+      <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-sm border-b border-hairline">
+        <div className="max-w-7xl mx-auto px-500 sm:px-700 h-1300 flex items-center justify-between gap-400">
+          <div className="flex items-center gap-400 min-w-0">
+            <Terminal className="w-4 h-4 text-signal-blue shrink-0" strokeWidth={2} />
+            <span className="text-200 font-mono font-semibold text-ink-primary">STRATSQUAD</span>
+            <span className="hidden sm:inline text-100 font-mono text-ink-tertiary truncate">
+              <span className="text-ink-secondary">multi-agent inference console</span> · v0.2
+            </span>
+          </div>
+          <div className="hidden md:flex items-center gap-400 text-100 font-mono text-ink-tertiary">
+            <MetaBadge label="model" value="deepseek-v4-flash" />
+            <MetaBadge label="embed" value="bge-m3" />
+            <MetaBadge label="eval" value="hit@5 90.9%" tone="green" />
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* INPUT */}
-      <div className="max-w-4xl mx-auto px-600 sm:px-800 pb-1500">
-        <section id="input" className="mb-1000 animate-fadeUp">
-          <SectionHeader number="01" title="战略问题输入" subtitle="把你想问策略团队的问题原样写进来。可选附带行业语料 / 数据片段，Agent 会优先引用。" />
+      <div className="max-w-7xl mx-auto px-500 sm:px-700 py-700">
+        {/* INTRO */}
+        <section className="mb-900 pt-600">
+          <div className="grid lg:grid-cols-[1.6fr_1fr] gap-800 items-end">
+            <div>
+              <div className="flex items-center gap-300 mb-400 text-100 font-mono text-ink-tertiary">
+                <span className="w-200 h-200 rounded-full bg-signal-green animate-pulseDot" />
+                <span className="uppercase tracking-[0.2em]">stratsquad / runtime ready</span>
+              </div>
+              <h1 className="text-600 sm:text-[44px] font-semibold tracking-[-0.02em] text-ink-primary leading-[1.1] mb-400">
+                A squad of agents, debating one strategy question.
+              </h1>
+              <p className="text-300 text-ink-secondary leading-relaxed max-w-xl">
+                Orchestrator decomposes the question, four expert agents argue in parallel, a judge scores them, then the composer ships a brief. Every token, every retrieval, every score is on the wire.
+              </p>
+            </div>
+            <div className="rounded-4 border border-hairline bg-surface p-500 font-mono text-100 text-ink-secondary space-y-200">
+              <div className="text-ink-tertiary uppercase tracking-[0.18em] text-[10px]">pipeline</div>
+              <div><span className="text-signal-blue">●</span> orchestrator → 4 sub-briefs</div>
+              <div><span className="text-signal-blue">●</span> rag.retrieve → top-5 chunks</div>
+              <div><span className="text-signal-blue">●</span> competitor · trend · market · risk (parallel)</div>
+              <div><span className="text-signal-amber">●</span> judge → rubric 4-dim, retry &lt; {JUDGE_PASS_THRESHOLD}</div>
+              <div><span className="text-signal-green">●</span> composer → final brief</div>
+            </div>
+          </div>
+        </section>
 
-          <div className="rounded-400 bg-mochimalist shadow-floating overflow-hidden">
+        {/* INPUT */}
+        <section id="input" className="mb-800">
+          <SectionRow label="01" title="STRATEGY QUESTION" desc="原样写问题。可选附行业语料 / 数据片段。" />
+
+          <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
             <textarea
-              className="w-full h-48 p-600 text-300 bg-transparent resize-y outline-none placeholder:text-roboflow-400 leading-relaxed"
-              placeholder="例：评估 2026 下半年发布一款 MOBA 手游进入东南亚市场的窗口期…"
+              className="w-full h-44 px-500 py-400 text-200 bg-transparent resize-y outline-none placeholder:text-ink-tertiary leading-relaxed font-sans"
+              placeholder="例：评估 2026 下半年发布一款 MOBA 手游进入东南亚市场的窗口期..."
               value={question}
               onChange={e => setQuestion(e.target.value)}
             />
 
             <button
               onClick={() => setShowCorpus(v => !v)}
-              className="w-full px-600 py-300 flex items-center justify-between text-100 font-bold uppercase tracking-[0.18em] text-roboflow-500 border-t border-roboflow-100 hover:bg-roboflow-50 transition-colors duration-300 ease-apple"
+              className="w-full px-500 py-300 flex items-center justify-between text-100 font-mono uppercase tracking-[0.15em] text-ink-secondary border-t border-hairline hover:bg-surface-2 transition-colors duration-150 ease-console"
             >
               <span className="flex items-center gap-200">
-                <FileText className="w-3.5 h-3.5" />
-                可选语料 · 行业报告 / 数据片段
+                <FileText className="w-3 h-3" />
+                CORPUS · 行业报告 / 数据片段（可选）
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ease-apple ${showCorpus ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3 h-3 transition-transform duration-150 ease-console ${showCorpus ? 'rotate-180' : ''}`} />
             </button>
             {showCorpus && (
               <textarea
-                className="w-full h-40 px-600 pb-400 text-200 bg-transparent resize-y outline-none placeholder:text-roboflow-400 leading-relaxed border-t border-roboflow-100"
-                placeholder="粘贴一段 Niko Partners / 伽马数据 / Sensor Tower / GameLook 报告片段。趋势 Agent 会优先引用。"
+                className="w-full h-32 px-500 pb-400 text-100 font-mono bg-transparent resize-y outline-none placeholder:text-ink-tertiary leading-relaxed border-t border-hairline"
+                placeholder="粘贴 Niko Partners / 伽马数据 / Sensor Tower 报告片段。"
                 value={corpus}
                 onChange={e => setCorpus(e.target.value)}
               />
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-300 px-600 py-300 border-t border-roboflow-100">
-              <div className="flex items-center gap-300">
-                <span className="text-100 font-mono text-roboflow-500">{question.length} 字</span>
+            <div className="flex flex-wrap items-center justify-between gap-300 px-500 py-300 border-t border-hairline bg-surface-2/50">
+              <div className="flex items-center gap-400 text-100 font-mono text-ink-tertiary">
+                <span><span className="text-ink-secondary tabular-nums">{question.length}</span> chars</span>
                 {!question && (
                   <button
                     onClick={() => { setQuestion(SAMPLE_QUESTION); setCorpus(SAMPLE_CORPUS); setShowCorpus(true) }}
-                    className="inline-flex items-center gap-100 px-300 py-100 rounded-pill bg-pushpin-50 text-pushpin-450 text-100 font-bold transition-all duration-300 ease-apple hover:bg-pushpin-100 hover:scale-105 active:scale-95"
+                    className="inline-flex items-center gap-100 text-signal-blue hover:text-signal-blue-bright transition-colors duration-150 ease-console"
                   >
-                    <Sparkles className="w-3 h-3" />
-                    一键填入示例问题
+                    [load sample]
                   </button>
                 )}
               </div>
-              <button
-                onClick={run}
-                disabled={running || !question.trim()}
-                className="inline-flex items-center gap-200 px-500 py-200 rounded-pill bg-cosmicore text-mochimalist text-200 font-semibold transition-all duration-500 ease-apple hover:bg-roboflow-700 hover:shadow-raised hover:-translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-              >
-                {running ? <><Loader2 className="w-4 h-4 animate-spin" />Agent 推演中</> : <>启动 Squad<ArrowRight className="w-4 h-4" /></>}
-              </button>
+              {running ? (
+                <button
+                  onClick={abort}
+                  className="inline-flex items-center gap-200 px-400 h-900 rounded-4 bg-surface-2 border border-signal-red/40 text-signal-red text-100 font-mono font-semibold uppercase tracking-wider hover:bg-signal-red-soft transition-colors duration-150 ease-console"
+                >
+                  <Square className="w-3 h-3" fill="currentColor" /> abort
+                </button>
+              ) : (
+                <button
+                  onClick={run}
+                  disabled={!question.trim()}
+                  className="inline-flex items-center gap-200 px-500 h-900 rounded-4 bg-signal-blue text-white text-100 font-mono font-semibold uppercase tracking-wider hover:bg-signal-blue-bright transition-colors duration-150 ease-console disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Play className="w-3 h-3" fill="currentColor" /> run squad
+                </button>
+              )}
             </div>
           </div>
         </section>
 
-        {/* TIMELINE — visible whenever the run has produced anything */}
-        {(running || hasAnyContent(agents)) && (
-          <section className="mb-1000 animate-fadeUp">
-            <SectionHeader number="02" title="Agent 推演时间线" subtitle="编排器先出 plan，4 位专家并行作战；评委低于 70 分会触发 retry。所有 token 通过 SSE 实时回传。" />
+        {/* TIMELINE */}
+        {(running || hasAnyContent(agents) || brief) && (
+          <section className="mb-800 animate-fadeIn">
+            <SectionRow
+              label="02"
+              title="AGENT TIMELINE"
+              desc="编排器先出 plan，4 位专家并行作战；评委低于 70 分触发 retry。全程 SSE。"
+              right={
+                <div className="flex items-center gap-400 text-100 font-mono text-ink-tertiary">
+                  <span><Activity className="inline w-3 h-3 mr-100" /><span className="text-ink-primary tabular-nums">{elapsed.toFixed(1)}</span>s</span>
+                  <span><span className="text-ink-primary tabular-nums">{totalTokens}</span> tok</span>
+                </div>
+              }
+            />
 
-            <div className="space-y-300">
-              {AGENT_ORDER.map(name => (
+            <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
+              {AGENT_ORDER.map((name, i) => (
                 <AgentRow
                   key={name}
                   name={name}
                   state={agents[name]}
+                  index={i}
                   brief={plan.find(p => p.agent === name as SubAgent)?.brief}
                   score={scores.find(s => s.agent === name as SubAgent)}
                   wasRetried={retries.includes(name as SubAgent)}
+                  isLast={i === AGENT_ORDER.length - 1}
                 />
               ))}
             </div>
@@ -313,54 +336,73 @@ export default function Home() {
 
         {/* RAG HITS */}
         {ragHits.length > 0 && (
-          <section className="mb-1000 animate-fadeUp">
-            <SectionHeader number="03" title="RAG 检索命中" subtitle={`查询：${ragQuery.slice(0, 80)}${ragQuery.length > 80 ? '…' : ''} · 模型 BGE-M3 (1024d) · top-${ragHits.length} 按 cosine 相似度排序`} />
-            <div className="space-y-300">
-              {ragHits.map((h, i) => <RagHitCard key={h.id} hit={h} rank={i + 1} />)}
+          <section className="mb-800 animate-fadeIn">
+            <SectionRow
+              label="03"
+              title="RAG HITS"
+              desc={`bge-m3 1024d · top-${ragHits.length} cosine · avg ${ragSimAvg.toFixed(3)}`}
+              right={
+                <span className="text-100 font-mono text-ink-tertiary truncate max-w-md hidden md:inline">
+                  q: <span className="text-ink-secondary">{ragQuery.slice(0, 60)}{ragQuery.length > 60 ? '…' : ''}</span>
+                </span>
+              }
+            />
+
+            <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
+              {ragHits.map((h, i) => <RagHitRow key={h.id} hit={h} rank={i + 1} isLast={i === ragHits.length - 1} />)}
             </div>
           </section>
         )}
 
         {/* JUDGE GRID */}
         {scores.length > 0 && (
-          <section className="mb-1000 animate-fadeUp">
-            <SectionHeader number="04" title="评委评分矩阵" subtitle={`证据 0.35 · 逻辑 0.25 · 可执行 0.30 · 新颖 0.10 · 通过线 ${JUDGE_PASS_THRESHOLD} 分`} />
-            <div className="rounded-400 bg-mochimalist shadow-floating overflow-hidden">
-              <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr_0.8fr] gap-200 px-500 py-300 text-100 font-bold uppercase tracking-[0.18em] text-roboflow-500 border-b border-roboflow-100">
-                <span>Agent</span>
-                <span className="text-center">证据</span>
-                <span className="text-center">逻辑</span>
-                <span className="text-center">可执行</span>
-                <span className="text-center">新颖</span>
-                <span className="text-right">总分</span>
-              </div>
-              {scores.map(s => <ScoreRow key={s.agent} score={s} />)}
+          <section className="mb-800 animate-fadeIn">
+            <SectionRow
+              label="04"
+              title="JUDGE RUBRIC"
+              desc={`weighted: evidence 0.35 · logic 0.25 · actionability 0.30 · novelty 0.10 · pass ≥ ${JUDGE_PASS_THRESHOLD}`}
+            />
+            <div className="rounded-4 border border-hairline bg-surface overflow-x-auto">
+              <table className="w-full font-mono text-100">
+                <thead>
+                  <tr className="border-b border-hairline text-ink-tertiary uppercase tracking-[0.15em] text-[11px]">
+                    <th className="text-left px-500 py-300 font-medium">agent</th>
+                    <th className="text-right px-300 py-300 font-medium">evidence</th>
+                    <th className="text-right px-300 py-300 font-medium">logic</th>
+                    <th className="text-right px-300 py-300 font-medium">action</th>
+                    <th className="text-right px-300 py-300 font-medium">novelty</th>
+                    <th className="text-right px-500 py-300 font-medium">total</th>
+                    <th className="text-right px-500 py-300 font-medium">verdict</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scores.map(s => <ScoreRow key={s.agent} score={s} />)}
+                </tbody>
+              </table>
             </div>
           </section>
         )}
 
         {/* BRIEF */}
         {brief && (
-          <section className="mb-1000 animate-fadeUp">
-            <SectionHeader number="05" title="战略简报终稿" subtitle="Composer 把 4 份 sub-agent 输出整合为给高层看的 markdown 简报。" />
-            <div className="rounded-400 bg-mochimalist shadow-floating p-700 sm:p-900">
+          <section className="mb-800 animate-fadeIn">
+            <SectionRow label="05" title="COMPOSED BRIEF" desc="composer 整合 4 份 sub-agent 输出，给高层看的 markdown." />
+            <div className="rounded-4 border border-hairline bg-surface p-700 sm:p-900">
               <div
-                className="prose-brief font-sans text-300 leading-[1.85] text-cosmicore"
+                className="prose-console font-sans text-200 leading-[1.85]"
                 dangerouslySetInnerHTML={{ __html: marked.parse(brief, { breaks: true }) as string }}
               />
             </div>
-            <div className="mt-500 flex items-center justify-between rounded-400 bg-cosmicore p-500 shadow-lift overflow-hidden relative gap-400">
-              <div className="absolute inset-0 bg-gradient-to-br from-pushpin-450/20 to-transparent" aria-hidden />
-              <div className="relative">
-                <div className="text-200 font-bold text-mochimalist">导出</div>
-                <div className="text-100 text-roboflow-300 mt-100">完整 JSON (问题 + plan + 4 份原始输出 + 评分 + 终稿) 可以丢给训练管线</div>
+            <div className="mt-500 rounded-4 border border-hairline bg-surface px-500 py-400 flex flex-wrap items-center justify-between gap-300">
+              <div className="text-100 font-mono text-ink-tertiary">
+                EXPORT · full JSON (question + plan + 4 outputs + scores + brief) ready for SFT pipeline
               </div>
-              <div className="relative flex items-center gap-200 shrink-0">
-                <button onClick={copyBrief} className="inline-flex items-center gap-200 px-400 py-200 rounded-pill bg-mochimalist/10 text-mochimalist text-100 font-bold transition-all duration-300 ease-apple hover:bg-mochimalist/20">
-                  <Copy className="w-3.5 h-3.5" /> 复制 Markdown
+              <div className="flex items-center gap-200">
+                <button onClick={copyBrief} className="inline-flex items-center gap-200 px-300 h-800 rounded-2 border border-hairline text-100 font-mono uppercase tracking-wider text-ink-secondary hover:bg-surface-2 hover:text-ink-primary transition-colors duration-150 ease-console">
+                  <Copy className="w-3 h-3" /> copy md
                 </button>
-                <button onClick={downloadResult} className="inline-flex items-center gap-200 px-500 py-300 rounded-pill bg-pushpin-450 text-mochimalist text-200 font-semibold transition-all duration-500 ease-apple hover:bg-pushpin-500 hover:shadow-lift hover:-translate-y-0.5">
-                  <Download className="w-4 h-4" /> 下载完整 JSON
+                <button onClick={downloadResult} className="inline-flex items-center gap-200 px-400 h-800 rounded-2 bg-signal-blue text-white text-100 font-mono font-semibold uppercase tracking-wider hover:bg-signal-blue-bright transition-colors duration-150 ease-console">
+                  <Download className="w-3 h-3" /> download json
                 </button>
               </div>
             </div>
@@ -368,21 +410,21 @@ export default function Home() {
         )}
 
         {error && (
-          <div className="mt-800 rounded-400 bg-pushpin-50 p-400 text-200 text-pushpin-700 flex items-start gap-300 animate-fadeUp">
-            <AlertCircle className="w-4 h-4 mt-100 shrink-0" />
-            <span className="leading-relaxed">{error}</span>
+          <div className="rounded-4 border border-signal-red/40 bg-signal-red-soft px-400 py-300 flex items-start gap-300 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 mt-100 shrink-0 text-signal-red" strokeWidth={2} />
+            <span className="text-200 font-mono leading-relaxed text-ink-primary">{error}</span>
           </div>
         )}
       </div>
 
-      <footer className="border-t border-roboflow-100 py-700 px-600">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-300">
-          <div className="text-100 text-roboflow-500">
-            <span className="font-bold text-cosmicore">StratSquad</span> · <span className="font-display italic">a squad of agents for game strategy work</span>
+      <footer className="border-t border-hairline px-500 sm:px-700 py-500 mt-1200">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-300 text-100 font-mono text-ink-tertiary">
+          <div>
+            <span className="text-ink-secondary font-semibold">stratsquad</span>
+            <span className="mx-300 text-ink-tertiary">|</span>
+            multi-agent strategy copilot · deepseek v4 · bge-m3
           </div>
-          <div className="text-100 font-mono text-roboflow-400 tracking-tight">
-            DeepSeek V4 · Pinterest Gestalt · Apple HIG
-          </div>
+          <div>track 2 · industrial console · vercel geist + ibm carbon</div>
         </div>
       </footer>
     </main>
@@ -395,134 +437,131 @@ function hasAnyContent(agents: Record<AgentName, AgentState>): boolean {
 
 /* ─────── components ─────── */
 
-function SectionHeader({ number, title, subtitle }: { number: string; title: string; subtitle: string }) {
+function SectionRow({ label, title, desc, right }: { label: string; title: string; desc: string; right?: React.ReactNode }) {
   return (
-    <div className="mb-600 flex items-start gap-400">
-      <span className="font-mono text-500 font-bold text-pushpin-450 leading-none shrink-0 w-1100 tabular-nums">{number}</span>
-      <div className="pt-100">
-        <h2 className="text-500 font-bold text-cosmicore tracking-[-0.02em] mb-100">{title}</h2>
-        <p className="text-200 text-roboflow-600 leading-relaxed max-w-xl">{subtitle}</p>
+    <div className="mb-500 flex items-baseline justify-between gap-400 flex-wrap">
+      <div className="flex items-baseline gap-400 min-w-0">
+        <span className="font-mono text-100 text-signal-blue tabular-nums">[{label}]</span>
+        <h2 className="font-mono text-200 font-semibold uppercase tracking-[0.18em] text-ink-primary">{title}</h2>
+        <p className="text-100 font-mono text-ink-tertiary truncate">{desc}</p>
       </div>
+      {right}
     </div>
   )
 }
 
-function PreviewCard({ className, badge, badgeColor, icon, children }: { className?: string; badge: string; badgeColor: string; icon: React.ReactNode; children: React.ReactNode }) {
+function MetaBadge({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'green' | 'blue' }) {
+  const color =
+    tone === 'green' ? 'text-signal-green' :
+    tone === 'blue' ? 'text-signal-blue' :
+    'text-ink-secondary'
   return (
-    <div className={`rounded-400 bg-mochimalist/80 backdrop-blur-xl shadow-lift p-500 transition-transform duration-700 ease-apple hover:scale-105 ${className ?? ''}`}>
-      <div className={`inline-flex items-center gap-100 px-200 py-100 rounded-pill text-100 font-bold mb-300 ${badgeColor}`}>
-        {icon}
-        <span className="tracking-wide">{badge}</span>
-      </div>
-      {children}
-    </div>
+    <span className="inline-flex items-center gap-200">
+      <span className="text-ink-tertiary uppercase tracking-[0.15em] text-[10px]">{label}</span>
+      <span className={`${color} font-semibold`}>{value}</span>
+    </span>
   )
 }
 
-function MiniRow({ label, tone }: { label: string; tone: 'run' | 'done' }) {
+function StatusPill({ status, tokens }: { status: AgentStatus; tokens: number }) {
+  const map: Record<AgentStatus, { label: string; cls: string; dot: string }> = {
+    idle:     { label: 'IDLE',    cls: 'text-ink-tertiary',  dot: 'bg-ink-tertiary' },
+    queued:   { label: 'QUEUED',  cls: 'text-ink-secondary', dot: 'bg-ink-secondary' },
+    running:  { label: 'RUNNING', cls: 'text-signal-blue',   dot: 'bg-signal-blue animate-pulseDot' },
+    done:     { label: 'DONE',    cls: 'text-signal-green',  dot: 'bg-signal-green' },
+    retry:    { label: 'RETRY',   cls: 'text-signal-amber',  dot: 'bg-signal-amber animate-pulseDot' },
+  }
+  const { label, cls, dot } = map[status]
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-200 text-cosmicore font-semibold">{label}</span>
-      {tone === 'run' ? (
-        <span className="inline-flex items-center gap-100 px-200 py-100 rounded-pill bg-pushpin-50 text-pushpin-450 text-100 font-mono font-bold">
-          <Loader2 className="w-3 h-3 animate-spin" />running
-        </span>
-      ) : (
-        <span className="inline-flex items-center gap-100 px-200 py-100 rounded-pill bg-roboflow-100 text-roboflow-700 text-100 font-mono font-bold">
-          <Check className="w-3 h-3" />done
-        </span>
+    <span className={`inline-flex items-center gap-200 font-mono text-100 ${cls}`}>
+      <span className={`w-200 h-200 rounded-full ${dot}`} />
+      <span className="font-semibold tracking-wider">{label}</span>
+      {status === 'running' && tokens > 0 && (
+        <span className="text-ink-tertiary tabular-nums">· <span className="text-ink-secondary">{tokens}</span> tok</span>
       )}
-    </div>
+    </span>
   )
 }
 
-function AgentRow({ name, state, brief, score, wasRetried }: { name: AgentName; state: AgentState; brief?: string; score?: JudgeScore; wasRetried: boolean }) {
+function formatDuration(start?: number, end?: number): string {
+  if (!start) return ''
+  const ms = (end ?? Date.now()) - start
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+function AgentRow({
+  name, state, index, brief, score, wasRetried, isLast,
+}: {
+  name: AgentName
+  state: AgentState
+  index: number
+  brief?: string
+  score?: JudgeScore
+  wasRetried: boolean
+  isLast: boolean
+}) {
   const [open, setOpen] = useState(false)
-  const isStreaming = state.status === 'running'
-  const isDone = state.status === 'done'
-  const isQueued = state.status === 'queued'
-  const isRetry = state.status === 'retry'
-
-  const statusColor =
-    isDone ? 'bg-pushpin-450 text-mochimalist' :
-    isStreaming ? 'bg-cosmicore text-mochimalist animate-pulseRing' :
-    isRetry ? 'bg-pushpin-50 text-pushpin-700' :
-    isQueued ? 'bg-roboflow-100 text-roboflow-600' :
-    'bg-roboflow-50 text-roboflow-400'
-
-  const statusText =
-    isDone ? 'DONE' :
-    isStreaming ? 'RUNNING' :
-    isRetry ? 'RETRY' :
-    isQueued ? 'QUEUED' :
-    'IDLE'
-
+  const dur = formatDuration(state.startedAt, state.finishedAt)
   return (
-    <article className={`rounded-400 bg-mochimalist transition-all duration-500 ease-apple ${
-      isStreaming ? 'shadow-raised ring-2 ring-pushpin-450/30' : isDone ? 'shadow-floating' : 'shadow-floating opacity-90'
-    }`}>
-      <button onClick={() => setOpen(o => !o)} className="w-full text-left p-500 flex items-start gap-400">
-        <span className={`shrink-0 w-1000 h-1000 rounded-pill flex items-center justify-center ${
-          isDone ? 'bg-pushpin-450 text-mochimalist' :
-          isStreaming ? 'bg-cosmicore text-mochimalist' :
-          'bg-roboflow-100 text-roboflow-500'
-        }`}>
-          {AGENT_ICON[name]}
+    <article className={`${isLast ? '' : 'border-b border-hairline'}`}>
+      <button onClick={() => setOpen(o => !o)} className="w-full text-left px-500 py-400 flex items-start gap-400 hover:bg-surface-2 transition-colors duration-150 ease-console">
+        <span className="font-mono text-100 text-ink-tertiary tabular-nums shrink-0 pt-100 w-700">
+          {String(index).padStart(2, '0')}
         </span>
+        <span className="shrink-0 text-ink-secondary pt-100">{AGENT_ICON[name]}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-300 flex-wrap">
-            <div className="flex items-center gap-300">
-              <span className="text-200 font-bold text-cosmicore">{AGENT_LABEL_ZH[name]}</span>
-              <span className="text-100 font-mono text-roboflow-400 uppercase tracking-wider">{name}</span>
+            <div className="flex items-center gap-300 min-w-0">
+              <span className="font-mono text-200 font-semibold text-ink-primary">{name}</span>
+              <span className="text-100 text-ink-tertiary">{AGENT_LABEL_ZH[name]}</span>
               {wasRetried && (
-                <span className="inline-flex items-center gap-100 px-200 py-100 rounded-pill bg-pushpin-50 text-pushpin-450 text-100 font-mono font-bold">
-                  <RotateCw className="w-3 h-3" />retried
+                <span className="inline-flex items-center gap-100 font-mono text-100 text-signal-amber">
+                  <RotateCw className="w-3 h-3" /> retried
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-200">
+            <div className="flex items-center gap-400 shrink-0">
+              {dur && <span className="font-mono text-100 text-ink-tertiary tabular-nums">{dur}</span>}
               {score && (
-                <span className={`text-100 font-mono font-bold px-200 py-100 rounded-pill ${
-                  score.verdict === 'pass' ? 'bg-pushpin-50 text-pushpin-450' : 'bg-roboflow-100 text-roboflow-600'
-                }`}>{score.total}/100</span>
+                <span className={`font-mono text-100 tabular-nums ${score.verdict === 'pass' ? 'text-signal-green' : 'text-signal-amber'}`}>
+                  {score.total}/100
+                </span>
               )}
-              <span className={`text-100 font-mono font-bold px-300 py-100 rounded-pill tracking-wider ${statusColor}`}>
-                {isStreaming && <Loader2 className="inline w-3 h-3 mr-100 animate-spin" />}
-                {statusText}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-roboflow-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+              <StatusPill status={state.status} tokens={state.tokens} />
+              <ChevronDown className={`w-3 h-3 text-ink-tertiary transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
             </div>
           </div>
           {brief && !open && (
-            <p className="mt-200 text-100 text-roboflow-500 leading-relaxed line-clamp-2">{brief}</p>
-          )}
-          {score && !open && (
-            <p className="mt-200 text-100 text-roboflow-600 leading-relaxed italic">{score.reason}</p>
+            <p className="mt-200 text-100 text-ink-tertiary leading-relaxed line-clamp-2">{brief}</p>
           )}
         </div>
       </button>
 
       {open && (
-        <div className="px-500 pb-500 -mt-200 space-y-300">
+        <div className="px-500 pb-500 -mt-100 space-y-300 ml-1100">
           {brief && (
-            <div className="rounded-300 bg-roboflow-50 p-400">
-              <div className="text-100 font-bold uppercase tracking-[0.18em] text-roboflow-500 mb-200">分派的任务简报</div>
-              <p className="text-200 text-cosmicore leading-relaxed">{brief}</p>
+            <div className="rounded-2 bg-surface-2 border border-hairline px-400 py-300">
+              <div className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary mb-200">DISPATCHED BRIEF</div>
+              <p className="text-100 text-ink-secondary leading-relaxed">{brief}</p>
             </div>
           )}
           {state.content && (
-            <div className="rounded-300 bg-roboflow-50 p-400 max-h-[420px] overflow-y-auto">
-              <div className="text-100 font-bold uppercase tracking-[0.18em] text-roboflow-500 mb-200">Agent 输出{isStreaming && <span className="ml-200 text-pushpin-450">· streaming</span>}</div>
+            <div className="rounded-2 bg-surface-2 border border-hairline px-400 py-300 max-h-[420px] overflow-y-auto">
+              <div className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary mb-200">
+                OUTPUT
+                {state.status === 'running' && <span className="ml-200 text-signal-blue normal-case tracking-normal">· streaming</span>}
+              </div>
               <div
-                className="prose-brief font-sans text-200 leading-[1.75] text-roboflow-700"
+                className="prose-console font-sans text-100 leading-[1.75]"
                 dangerouslySetInnerHTML={{ __html: marked.parse(state.content, { breaks: true }) as string }}
               />
             </div>
           )}
           {score && (
-            <div className="rounded-300 bg-pushpin-50/40 p-400">
-              <div className="text-100 font-bold uppercase tracking-[0.18em] text-pushpin-450 mb-200">评委评语</div>
-              <p className="text-200 text-cosmicore leading-relaxed">{score.reason}</p>
+            <div className="rounded-2 bg-surface-2 border border-hairline px-400 py-300">
+              <div className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary mb-200">JUDGE REASON</div>
+              <p className="text-100 text-ink-secondary leading-relaxed">{score.reason}</p>
             </div>
           )}
         </div>
@@ -531,62 +570,87 @@ function AgentRow({ name, state, brief, score, wasRetried }: { name: AgentName; 
   )
 }
 
-function RagHitCard({ hit, rank }: { hit: RagHit; rank: number }) {
-  const pct = Math.round(hit.score * 100)
+function RagHitRow({ hit, rank, isLast }: { hit: RagHit; rank: number; isLast: boolean }) {
+  const [open, setOpen] = useState(false)
   return (
-    <article className="rounded-400 bg-mochimalist shadow-floating p-500 transition-all duration-500 ease-apple hover:shadow-lift">
-      <div className="flex items-start gap-400">
-        <span className="shrink-0 inline-flex items-center justify-center w-1100 h-1100 rounded-pill bg-pushpin-50 text-pushpin-450 font-mono text-200 font-bold tabular-nums">
-          #{rank}
-        </span>
+    <div className={`${isLast ? '' : 'border-b border-hairline'}`}>
+      <button onClick={() => setOpen(o => !o)} className="w-full text-left px-500 py-300 flex items-start gap-400 hover:bg-surface-2 transition-colors duration-150 ease-console">
+        <span className="font-mono text-100 text-signal-blue tabular-nums shrink-0 pt-100 w-700">[#{rank}]</span>
+        <Database className="w-3.5 h-3.5 shrink-0 text-ink-tertiary mt-100" strokeWidth={1.5} />
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-200 mb-200">
-            <span className="inline-flex items-center gap-100 px-200 py-100 rounded-pill bg-roboflow-100 text-roboflow-700 text-100 font-mono font-bold">
-              <Database className="w-3 h-3" />
-              {hit.source}
-            </span>
-            {hit.heading && (
-              <span className="text-100 font-mono text-roboflow-500">§ {hit.heading}</span>
-            )}
-            <span className="ml-auto inline-flex items-center gap-100 px-200 py-100 rounded-pill bg-pushpin-450 text-mochimalist text-100 font-mono font-bold tabular-nums">
-              <Search className="w-3 h-3" />
-              sim {hit.score.toFixed(3)}
-            </span>
+          <div className="flex items-center justify-between gap-300 flex-wrap">
+            <div className="flex items-center gap-300 min-w-0 font-mono text-100">
+              <span className="text-ink-primary font-semibold">{hit.source}</span>
+              {hit.heading && <span className="text-ink-tertiary">§ {hit.heading}</span>}
+            </div>
+            <div className="flex items-center gap-300 shrink-0 font-mono text-100">
+              <SimBar score={hit.score} />
+              <span className="text-signal-blue tabular-nums font-semibold">{hit.score.toFixed(3)}</span>
+              <ChevronDown className={`w-3 h-3 text-ink-tertiary transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+            </div>
           </div>
-          <div className="w-full h-100 rounded-pill bg-roboflow-100 overflow-hidden mb-300">
-            <div className="h-full rounded-pill bg-pushpin-450" style={{ width: `${pct}%` }} />
-          </div>
-          <p className="text-200 text-roboflow-700 leading-relaxed whitespace-pre-wrap">{hit.text}</p>
+          {!open && (
+            <p className="mt-200 text-100 text-ink-tertiary leading-relaxed line-clamp-2">{hit.text.slice(0, 160)}{hit.text.length > 160 ? '…' : ''}</p>
+          )}
         </div>
-      </div>
-    </article>
+      </button>
+      {open && (
+        <div className="px-500 pb-400 -mt-100 ml-1100">
+          <div className="rounded-2 bg-surface-2 border border-hairline px-400 py-300 text-100 text-ink-secondary leading-relaxed whitespace-pre-wrap">
+            {hit.text}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SimBar({ score }: { score: number }) {
+  const pct = Math.round(score * 100)
+  return (
+    <span className="hidden md:inline-block w-1300 h-100 rounded-0 bg-hairline overflow-hidden">
+      <span className="block h-full bg-signal-blue" style={{ width: `${pct}%` }} />
+    </span>
   )
 }
 
 function ScoreRow({ score }: { score: JudgeScore }) {
-  const dims = [
-    { key: 'evidence' as const, value: score.evidence },
-    { key: 'logic' as const, value: score.logic },
-    { key: 'actionability' as const, value: score.actionability },
-    { key: 'novelty' as const, value: score.novelty },
+  const cells = [
+    { value: score.evidence }, { value: score.logic },
+    { value: score.actionability }, { value: score.novelty },
   ]
   return (
-    <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr_0.8fr] gap-200 px-500 py-400 items-center border-b border-roboflow-100 last:border-0">
-      <div className="flex items-center gap-200">
-        {AGENT_ICON[score.agent]}
-        <span className="text-200 font-semibold text-cosmicore">{AGENT_LABEL_ZH[score.agent]}</span>
-      </div>
-      {dims.map(d => (
-        <div key={d.key} className="flex flex-col items-center">
-          <span className="text-200 font-mono font-bold text-cosmicore tabular-nums">{d.value}</span>
-          <div className="mt-100 w-full h-100 rounded-pill bg-roboflow-100 overflow-hidden">
-            <div className={`h-full rounded-pill ${d.value >= 70 ? 'bg-pushpin-450' : 'bg-roboflow-400'}`} style={{ width: `${d.value}%` }} />
-          </div>
-        </div>
+    <tr className="border-t border-hairline">
+      <td className="px-500 py-300 text-ink-primary font-semibold">{score.agent}</td>
+      {cells.map((c, i) => (
+        <td key={i} className="px-300 py-300 text-right">
+          <ScoreCell value={c.value} />
+        </td>
       ))}
-      <span className={`text-right text-300 font-mono font-bold tabular-nums ${score.verdict === 'pass' ? 'text-pushpin-450' : 'text-roboflow-500'}`}>
+      <td className={`px-500 py-300 text-right tabular-nums font-semibold ${score.verdict === 'pass' ? 'text-signal-green' : 'text-signal-amber'}`}>
         {score.total}
+      </td>
+      <td className="px-500 py-300 text-right">
+        <span className={`inline-flex items-center gap-200 ${score.verdict === 'pass' ? 'text-signal-green' : 'text-signal-amber'}`}>
+          <span className={`w-200 h-200 rounded-full ${score.verdict === 'pass' ? 'bg-signal-green' : 'bg-signal-amber'}`} />
+          {score.verdict === 'pass' ? 'PASS' : 'RETRY'}
+        </span>
+      </td>
+    </tr>
+  )
+}
+
+function ScoreCell({ value }: { value: number }) {
+  const tone =
+    value >= 80 ? 'text-signal-green' :
+    value >= JUDGE_PASS_THRESHOLD ? 'text-ink-primary' :
+    'text-signal-amber'
+  return (
+    <span className="inline-flex items-center gap-200 justify-end font-mono">
+      <span className="hidden lg:inline-block w-700 h-100 rounded-0 bg-hairline overflow-hidden">
+        <span className={`block h-full ${value >= JUDGE_PASS_THRESHOLD ? 'bg-signal-green' : 'bg-signal-amber'}`} style={{ width: `${value}%` }} />
       </span>
-    </div>
+      <span className={`tabular-nums ${tone}`}>{value}</span>
+    </span>
   )
 }

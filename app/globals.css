@@ -3,47 +3,70 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html, body {
-  background: #FAFAF7;
-  color: #111111;
+  background: #0A0A0A;
+  color: #EDEDED;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: #E60023;
+  background: #0070F3;
   color: #FFFFFF;
 }
 
 textarea::placeholder, input::placeholder {
-  color: #A5A5A5;
+  color: #666666;
 }
 
-.font-display {
-  font-feature-settings: "kern", "liga", "dlig";
-  letter-spacing: -0.02em;
+/* Mono-rendered markdown for agent / brief output.
+   Headings use sans, body uses sans, but inline code stays mono. */
+.prose-console h1 { font-size: 24px; font-weight: 600; color: #EDEDED; margin: 24px 0 12px; letter-spacing: -0.01em; }
+.prose-console h2 { font-size: 18px; font-weight: 600; color: #EDEDED; margin: 20px 0 8px; padding-top: 12px; border-top: 1px solid #2E2E2E; }
+.prose-console h2:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.prose-console h3 { font-size: 15px; font-weight: 600; color: #A1A1A1; margin: 16px 0 4px; }
+.prose-console p  { margin: 8px 0; color: #A1A1A1; }
+.prose-console ul, .prose-console ol { margin: 8px 0 8px 20px; padding: 0; color: #A1A1A1; }
+.prose-console li { margin: 4px 0; }
+.prose-console strong { font-weight: 600; color: #EDEDED; }
+.prose-console em { font-style: normal; color: #EDEDED; }
+.prose-console code {
+  font-family: "Geist Mono", "SF Mono", "JetBrains Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: #1A1A1A;
+  border: 1px solid #2E2E2E;
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: #00DC82;
+}
+.prose-console blockquote {
+  border-left: 2px solid #0070F3;
+  padding-left: 12px;
+  margin: 12px 0;
+  color: #A1A1A1;
+  font-style: normal;
+}
+.prose-console hr { border: 0; border-top: 1px solid #2E2E2E; margin: 16px 0; }
+
+/* Scrollbars — dark, thin */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0A0A0A; }
+::-webkit-scrollbar-thumb { background: #2E2E2E; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #3D3D3D; }
+
+/* Subtle grid backdrop on canvas — like a CRT / monitoring console */
+.canvas-grid {
+  background-image:
+    linear-gradient(rgba(46, 46, 46, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46, 46, 46, 0.4) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
 }
 
-/* Minimal prose styling for marked-rendered markdown.
-   Keep Gestalt sizes — only headings get the editorial scale. */
-.prose-brief h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #111111; margin: 24px 0 12px; }
-.prose-brief h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #111111; margin: 24px 0 8px; padding-top: 8px; border-top: 1px solid #F1F1F1; }
-.prose-brief h2:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
-.prose-brief h3 { font-size: 16px; font-weight: 700; color: #2B2B2B; margin: 16px 0 4px; }
-.prose-brief p  { margin: 8px 0; }
-.prose-brief ul, .prose-brief ol { margin: 8px 0 8px 20px; padding: 0; }
-.prose-brief li { margin: 4px 0; }
-.prose-brief strong { font-weight: 700; color: #111111; }
-.prose-brief em { font-style: italic; color: #4A4A4A; }
-.prose-brief code { font-family: SFMono-Medium, "SF Mono", Menlo, monospace; font-size: 0.92em; background: #F1F1F1; padding: 2px 6px; border-radius: 4px; }
-.prose-brief blockquote { border-left: 3px solid #E60023; padding-left: 12px; margin: 12px 0; color: #4A4A4A; font-style: italic; }
-.prose-brief hr { border: 0; border-top: 1px solid #F1F1F1; margin: 16px 0; }
-
-/* Tailwind v3 doesn't ship line-clamp by default here. */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
