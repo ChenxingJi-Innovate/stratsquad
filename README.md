@@ -253,12 +253,76 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | npm run mcp
 
 ---
 
-## Deploy to Vercel
+## Deploy
+
+The repo ships with a multi-stage `Dockerfile` (`output: 'standalone'` enabled), so any container-aware host works. Pick whichever matches your audience.
+
+### Option A · Vercel (zero-config Next.js)
 
 1. Push to a Git repo, import on vercel.com
-2. Set `DEEPSEEK_API_KEY` in project settings → Environment Variables
-3. Deploy. The orchestration endpoint uses Node runtime with `maxDuration: 300`. **Pro plan required** for streams over 60s (a full 4-agent run takes ~40-90s with `deepseek-v4-flash`).
-4. (Optional) Tune `DEEPSEEK_MODEL` per deploy.
+2. Settings → Environment Variables → `DEEPSEEK_API_KEY`, `SILICONFLOW_API_KEY`
+3. Deploy. The orchestration endpoint uses Node runtime with `maxDuration: 300`. **Pro plan required** for streams over 60s (a full 4-agent run takes ~40-90s with `deepseek-v4-flash`). Hobby plan will get truncated.
+
+### Option B · ModelScope 创空间 (China-native, lowest API latency to DeepSeek/SiliconFlow)
+
+1. https://modelscope.cn/studios/create → SDK = **Docker**, hardware = CPU Basic (free)
+2. Connect this GitHub repo or upload the source
+3. Settings → 环境变量 → add `DEEPSEEK_API_KEY` and `SILICONFLOW_API_KEY`
+4. ModelScope auto-builds from the root `Dockerfile`. Default port 7860 matches.
+5. URL pattern: `https://modelscope.cn/studios/<user>/stratsquad`
+
+Why this option is strong: ModelScope nodes are in mainland China, so DeepSeek / SiliconFlow API calls have sub-100ms RTT. Vercel/HF nodes go through GFW, often 500-2000ms.
+
+### Option C · HuggingFace Spaces (international ML community visibility)
+
+1. https://huggingface.co/new-space → SDK = **Docker**, hardware = CPU basic (free, 2 vCPU / 16GB)
+2. Push this repo to the Space (HF Spaces is just a Git remote)
+3. Settings → Variables and secrets → add `DEEPSEEK_API_KEY` and `SILICONFLOW_API_KEY` as **secrets**
+4. HF auto-builds from the root `Dockerfile`. Default port 7860 matches.
+
+Trade-off: HF nodes are in US/EU, so calls to mainland Chinese APIs (DeepSeek, SiliconFlow) have +500ms latency and occasional retry.
+
+### Option D · 阿里云函数计算 / 腾讯云 Cloud Run
+
+1. Build and push Docker image: `docker build -t stratsquad . && docker tag stratsquad <registry>/stratsquad && docker push <registry>/stratsquad`
+2. 阿里云: 函数计算 → 创建服务 → 自定义运行时容器镜像 → 指向你的镜像
+3. 腾讯云: Cloud Run → 创建服务 → 容器镜像
+4. Both support 24h+ timeouts (plenty for 300s SSE streams). China-native = low API latency.
+
+### Option E · Railway / Fly.io / Render
+
+```bash
+# Railway: connect GitHub, auto-detects Next.js, no Dockerfile needed
+# Or use Docker mode pointing at this Dockerfile
+# Free tier $5 credit/month; $5/month after that.
+```
+
+No timeout caps, supports SSE, $5/month entry tier.
+
+### Option F · 腾讯云轻量服务器 / DigitalOcean Droplet (cheapest, full control)
+
+```bash
+ssh root@your-vps
+git clone https://github.com/ChenxingJi-Innovate/stratsquad
+cd stratsquad
+docker build -t stratsquad .
+docker run -d --restart=always -p 80:7860 \
+  -e DEEPSEEK_API_KEY=sk-xxx -e SILICONFLOW_API_KEY=sk-xxx \
+  --name stratsquad stratsquad
+```
+
+腾讯云轻量 ¥24/年起，DigitalOcean $4/月，长期最划算。
+
+### Local Docker test (before any cloud deploy)
+
+```bash
+docker build -t stratsquad .
+docker run -p 7860:7860 \
+  -e DEEPSEEK_API_KEY=sk-xxx \
+  -e SILICONFLOW_API_KEY=sk-xxx \
+  stratsquad
+# → http://localhost:7860
+```
 
 ---
 
