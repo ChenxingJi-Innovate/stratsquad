@@ -5,9 +5,24 @@ import {
   AlertCircle, Brain, Target, TrendingUp,
   Globe, ShieldAlert, Scale, FileText, RotateCw, Download, Copy, ChevronDown,
   Database, Terminal, Play, Square, Activity, Languages,
+  Search, Video, Gamepad2, MessageSquare, Smartphone, Tv, Radio, MonitorPlay,
+  Check, Ban, Loader,
 } from 'lucide-react'
-import type { AgentName, StreamEvent, Subtask, JudgeScore, SubAgent, FullResult, RagHit } from '../lib/types'
+import type { AgentName, StreamEvent, Subtask, JudgeScore, SubAgent, FullResult, RagHit, TrendQueryPlan, TrendResult, TrendSource } from '../lib/types'
 import { AGENT_LABEL_ZH, AGENT_LABEL_EN, JUDGE_PASS_THRESHOLD } from '../lib/types'
+import { TREND_SOURCE_LABEL_ZH, TREND_SOURCE_LABEL_EN } from '../lib/trends/types'
+
+const TREND_ICON: Record<TrendSource, React.ReactNode> = {
+  'google-trends': <Search className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'steam': <Gamepad2 className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'twitch': <MonitorPlay className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'reddit': <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'youtube': <Video className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'appstore': <Smartphone className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'huya': <Tv className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'douyu': <Radio className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'bilibili': <Activity className="w-3.5 h-3.5" strokeWidth={1.5} />,
+}
 
 type Lang = 'zh' | 'en'
 type AgentStatus = 'idle' | 'queued' | 'running' | 'done' | 'retry'
@@ -28,10 +43,13 @@ const AGENT_ICON: Record<AgentName, React.ReactNode> = {
 type Dict = {
   brand_subtitle: string
   runtime_ready: string
-  hero_title: string
+  hero_pre: string
+  hero_italic: string
+  hero_post: string
   hero_desc: string
   pipeline_label: string
   pipeline_lines: string[]
+  pipeline_nodes: { agents: AgentName[] | AgentName; label: string }[]
   sec_input: string
   sec_input_desc: string
   q_placeholder: string
@@ -46,6 +64,13 @@ type Dict = {
   sec_rag: string
   rag_desc: (n: number, avg: string) => string
   query_prefix: string
+  sec_data: string
+  sec_data_desc: (n: number, ok: number) => string
+  data_rationale: string
+  data_no_plan: string
+  data_pending: string
+  data_failed: string
+  th_source_status: string
   sec_judge: string
   sec_judge_desc: string
   th_agent: string
@@ -75,8 +100,10 @@ const i18n: Record<Lang, Dict> = {
   zh: {
     brand_subtitle: '多智能体推演控制台',
     runtime_ready: 'stratsquad / 运行时就绪',
-    hero_title: '四位 Agent，围绕一个战略问题展开推演。',
-    hero_desc: '编排器拆解问题，四位专家 Agent 并行作战，评委 4 维评分，低分触发重生，终稿合成战略简报。每个 token / 每次检索 / 每个分数都在屏幕上。',
+    hero_pre: '四位 Agent，围绕一个战略问题展开',
+    hero_italic: '推演',
+    hero_post: '。',
+    hero_desc: '编排器拆解问题，四位专家 Agent 并行作战，评委 4 维评分，低分触发重生，终稿合成战略简报。每个 token、每次检索、每条实时趋势数据、每个分数都在屏幕上。',
     pipeline_label: '流水线',
     pipeline_lines: [
       'orchestrator → 拆解为 4 个子简报',
@@ -84,6 +111,13 @@ const i18n: Record<Lang, Dict> = {
       'competitor · trend · market · risk（并行）',
       `judge → 4 维评分，< ${JUDGE_PASS_THRESHOLD} 触发 retry`,
       'composer → 输出最终战略简报',
+    ],
+    pipeline_nodes: [
+      { agents: 'orchestrator', label: 'orchestrator · 拆解 4 个子简报' },
+      { agents: 'orchestrator', label: 'rag + 9 源 trend planner' },
+      { agents: ['competitor', 'trend', 'market', 'risk'], label: 'competitor · trend · market · risk（并行）' },
+      { agents: 'judge', label: `judge · 4 维评分，< ${JUDGE_PASS_THRESHOLD} 触发 retry` },
+      { agents: 'composer', label: 'composer · 终稿战略简报' },
     ],
     sec_input: '战略问题',
     sec_input_desc: '原样写问题。可选附行业语料 / 数据片段。',
@@ -99,6 +133,13 @@ const i18n: Record<Lang, Dict> = {
     sec_rag: 'RAG 检索命中',
     rag_desc: (n, avg) => `bge-m3 1024d · top-${n} cosine · 平均相似度 ${avg}`,
     query_prefix: 'q:',
+    sec_data: '实时趋势数据',
+    sec_data_desc: (n, ok) => `${ok}/${n} 源命中 · 9 个公开数据源 · 规划器自动选源`,
+    data_rationale: '采集策略',
+    data_no_plan: '规划器未选源',
+    data_pending: '采集中',
+    data_failed: 'FAILED',
+    th_source_status: '状态',
     sec_judge: '评委评分表',
     sec_judge_desc: `加权: 证据 0.35 · 逻辑 0.25 · 可执行 0.30 · 新颖 0.10 · 通过线 ≥ ${JUDGE_PASS_THRESHOLD}`,
     th_agent: 'agent',
@@ -134,8 +175,10 @@ Sensor Tower 数据显示，2025 Q3 东南亚 MOBA 品类 ARPU 约 4.2 美元，
   en: {
     brand_subtitle: 'multi-agent inference console',
     runtime_ready: 'stratsquad / runtime ready',
-    hero_title: 'A squad of agents, debating one strategy question.',
-    hero_desc: 'Orchestrator decomposes the question, four expert agents argue in parallel, a judge scores them, then the composer ships a brief. Every token, every retrieval, every score is on the wire.',
+    hero_pre: 'A squad of agents, ',
+    hero_italic: 'debating',
+    hero_post: ' one strategy question.',
+    hero_desc: 'Orchestrator decomposes the question, four expert agents argue in parallel, a judge scores them, then the composer ships a brief. Every token, every retrieval, every live trend hit, every score is on the wire.',
     pipeline_label: 'pipeline',
     pipeline_lines: [
       'orchestrator → 4 sub-briefs',
@@ -143,6 +186,13 @@ Sensor Tower 数据显示，2025 Q3 东南亚 MOBA 品类 ARPU 约 4.2 美元，
       'competitor · trend · market · risk (parallel)',
       `judge → rubric 4-dim, retry < ${JUDGE_PASS_THRESHOLD}`,
       'composer → final brief',
+    ],
+    pipeline_nodes: [
+      { agents: 'orchestrator', label: 'orchestrator · 4 sub-briefs' },
+      { agents: 'orchestrator', label: 'rag + 9-source trend planner' },
+      { agents: ['competitor', 'trend', 'market', 'risk'], label: 'competitor · trend · market · risk (parallel)' },
+      { agents: 'judge', label: `judge · 4-dim rubric, retry < ${JUDGE_PASS_THRESHOLD}` },
+      { agents: 'composer', label: 'composer · final brief' },
     ],
     sec_input: 'STRATEGY QUESTION',
     sec_input_desc: 'Write the question verbatim. Optional corpus snippets for RAG context.',
@@ -158,6 +208,13 @@ Sensor Tower 数据显示，2025 Q3 东南亚 MOBA 品类 ARPU 约 4.2 美元，
     sec_rag: 'RAG HITS',
     rag_desc: (n, avg) => `bge-m3 1024d · top-${n} cosine · avg ${avg}`,
     query_prefix: 'q:',
+    sec_data: 'LIVE TREND DATA',
+    sec_data_desc: (n, ok) => `${ok}/${n} sources hit · 9 public APIs · planner-selected`,
+    data_rationale: 'selection rationale',
+    data_no_plan: 'planner picked no sources',
+    data_pending: 'fetching',
+    data_failed: 'FAILED',
+    th_source_status: 'status',
     sec_judge: 'JUDGE RUBRIC',
     sec_judge_desc: `weighted: evidence 0.35 · logic 0.25 · actionability 0.30 · novelty 0.10 · pass ≥ ${JUDGE_PASS_THRESHOLD}`,
     th_agent: 'agent',
@@ -203,6 +260,8 @@ export default function Home() {
   const [plan, setPlan] = useState<Subtask[]>([])
   const [ragHits, setRagHits] = useState<RagHit[]>([])
   const [ragQuery, setRagQuery] = useState('')
+  const [trendPlan, setTrendPlan] = useState<TrendQueryPlan | null>(null)
+  const [trendResults, setTrendResults] = useState<TrendResult[]>([])
   const [scores, setScores] = useState<JudgeScore[]>([])
   const [retries, setRetries] = useState<SubAgent[]>([])
   const [brief, setBrief] = useState('')
@@ -216,7 +275,9 @@ export default function Home() {
 
   function resetRun() {
     setAgents(initAgents())
-    setPlan([]); setRagHits([]); setRagQuery(''); setScores([]); setRetries([]); setBrief(''); setError('')
+    setPlan([]); setRagHits([]); setRagQuery('')
+    setTrendPlan(null); setTrendResults([])
+    setScores([]); setRetries([]); setBrief(''); setError('')
   }
 
   // restore lang preference on mount
@@ -322,6 +383,21 @@ export default function Home() {
         setRagQuery(ev.query)
         setRagHits(ev.hits)
         break
+      case 'trend_plan':
+        setTrendPlan(ev.plan)
+        break
+      case 'trend_result':
+        setTrendResults(prev => {
+          // Dedupe by full query identity so multi-query-per-source (e.g., appstore US + CN) all show.
+          const key = JSON.stringify(ev.result.query)
+          const filtered = prev.filter(r => JSON.stringify(r.query) !== key)
+          return [...filtered, ev.result]
+        })
+        break
+      case 'trend_bundle':
+        // bundle is the aggregate; already have individual results, but persist for download
+        setTrendResults(ev.bundle.results)
+        break
       case 'judge':
         setScores(ev.scores)
         break
@@ -341,6 +417,7 @@ export default function Home() {
   function downloadResult() {
     const result: FullResult = {
       question, plan, ragHits,
+      trendBundle: trendPlan ? { plan: trendPlan, results: trendResults } : null,
       outputs: {
         competitor: agents.competitor.content, trend: agents.trend.content,
         market: agents.market.content, risk: agents.risk.content,
@@ -394,32 +471,32 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-500 sm:px-700 py-700">
         {/* INTRO */}
-        <section className="mb-900 pt-600">
-          <div className="grid lg:grid-cols-[1.6fr_1fr] gap-800 items-end">
-            <div>
+        <section className="mb-900 pt-600 relative">
+          <div className="hero-aurora" aria-hidden />
+          <div className="grid lg:grid-cols-[1.6fr_1fr] gap-800 items-end relative">
+            <div className="relative">
               <div className="flex items-center gap-300 mb-400 text-100 font-mono text-ink-tertiary">
                 <span className="w-200 h-200 rounded-full bg-signal-green animate-pulseDot" />
                 <span className="uppercase tracking-[0.2em]">{t.runtime_ready}</span>
               </div>
-              <h1 className="text-600 sm:text-[44px] font-semibold tracking-[-0.02em] text-ink-primary leading-[1.1] mb-400">
-                {t.hero_title}
+              <h1
+                className="font-semibold text-ink-primary leading-[1.04] mb-500"
+                style={{ fontSize: 'clamp(40px, 6vw, 76px)', letterSpacing: '-0.035em' }}
+              >
+                {t.hero_pre}
+                <span className="hero-italic text-ink-primary">{t.hero_italic}</span>
+                <span className="text-signal-blue">{t.hero_post}</span>
               </h1>
               <p className="text-300 text-ink-secondary leading-relaxed max-w-xl">
                 {t.hero_desc}
               </p>
             </div>
-            <div className="rounded-4 border border-hairline bg-surface p-500 font-mono text-100 text-ink-secondary space-y-200">
-              <div className="text-ink-tertiary uppercase tracking-[0.18em] text-[10px]">{t.pipeline_label}</div>
-              {t.pipeline_lines.map((line, i) => {
-                const dotColor =
-                  i === 3 ? 'text-signal-amber' :
-                  i === 4 ? 'text-signal-green' :
-                  'text-signal-blue'
-                return (
-                  <div key={i}><span className={dotColor}>●</span> {line}</div>
-                )
-              })}
-            </div>
+            <PipelinePanel
+              label={t.pipeline_label}
+              nodes={t.pipeline_nodes}
+              agents={agents}
+              running={running}
+            />
           </div>
         </section>
 
@@ -495,8 +572,15 @@ export default function Home() {
               desc={t.sec_timeline_desc}
               right={
                 <div className="flex items-center gap-400 text-100 font-mono text-ink-tertiary">
-                  <span><Activity className="inline w-3 h-3 mr-100" /><span className="text-ink-primary tabular-nums">{elapsed.toFixed(1)}</span>s</span>
-                  <span><span className="text-ink-primary tabular-nums">{totalTokens}</span> tok</span>
+                  <span className="inline-flex items-center gap-100">
+                    <Activity className="w-3 h-3" />
+                    <RollingNumber value={elapsed.toFixed(1)} className="text-ink-primary" />
+                    <span>s</span>
+                  </span>
+                  <span className="inline-flex items-center gap-100">
+                    <RollingNumber value={String(totalTokens)} className="text-ink-primary" />
+                    <span>tok</span>
+                  </span>
                 </div>
               }
             />
@@ -540,11 +624,55 @@ export default function Home() {
           </section>
         )}
 
+        {/* DATA QUERY (LIVE TREND SOURCES) */}
+        {(trendPlan || trendResults.length > 0) && (
+          <section className="mb-800 animate-fadeIn">
+            <SectionRow
+              label="04"
+              title={t.sec_data}
+              desc={t.sec_data_desc(
+                trendPlan?.queries.length ?? 0,
+                trendResults.filter(r => r.ok).length,
+              )}
+            />
+
+            <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
+              {trendPlan && trendPlan.rationale && (
+                <div className="px-500 py-400 border-b border-hairline bg-surface-2/40">
+                  <div className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary mb-200">
+                    {t.data_rationale}
+                  </div>
+                  <p className="text-200 text-ink-secondary leading-relaxed">{trendPlan.rationale}</p>
+                </div>
+              )}
+              {trendPlan && trendPlan.queries.length === 0 && (
+                <div className="px-500 py-500 text-100 font-mono text-ink-tertiary">
+                  {t.data_no_plan}
+                </div>
+              )}
+              {trendPlan && trendPlan.queries.map((q, i) => {
+                const result = trendResults.find(r => JSON.stringify(r.query) === JSON.stringify(q))
+                return (
+                  <TrendQueryRow
+                    key={`${q.source}-${i}`}
+                    source={q.source}
+                    queryParams={q}
+                    result={result}
+                    isLast={i === trendPlan.queries.length - 1}
+                    t={t}
+                    lang={lang}
+                  />
+                )
+              })}
+            </div>
+          </section>
+        )}
+
         {/* JUDGE GRID */}
         {scores.length > 0 && (
           <section className="mb-800 animate-fadeIn">
             <SectionRow
-              label="04"
+              label="05"
               title={t.sec_judge}
               desc={t.sec_judge_desc}
             />
@@ -572,10 +700,10 @@ export default function Home() {
         {/* BRIEF */}
         {brief && (
           <section className="mb-800 animate-fadeIn">
-            <SectionRow label="05" title={t.sec_brief} desc={t.sec_brief_desc} />
+            <SectionRow label="06" title={t.sec_brief} desc={t.sec_brief_desc} />
             <div className="rounded-4 border border-hairline bg-surface p-700 sm:p-900">
               <div
-                className="prose-console font-sans text-200 leading-[1.85]"
+                className="prose-console prose-brief font-sans text-200 leading-[1.85]"
                 dangerouslySetInnerHTML={{ __html: marked.parse(brief, { breaks: true }) as string }}
               />
             </div>
@@ -792,10 +920,20 @@ function RagHitRow({ hit, rank, isLast }: { hit: RagHit; rank: number; isLast: b
 }
 
 function SimBar({ score }: { score: number }) {
-  const pct = Math.round(score * 100)
+  // Hairline tick scale: 11 ticks, fill from left up to score (0..1) bucket. Each lit tick reveals 60ms after the previous.
+  const total = 11
+  const lit = Math.max(0, Math.min(total, Math.round(score * total)))
   return (
-    <span className="hidden md:inline-block w-1300 h-100 rounded-0 bg-hairline overflow-hidden">
-      <span className="block h-full bg-signal-blue" style={{ width: `${pct}%` }} />
+    <span className="hidden md:inline-flex items-center gap-[2px] h-[10px]" aria-label={`similarity ${(score * 100).toFixed(0)}%`}>
+      {Array.from({ length: total }).map((_, i) => (
+        <span
+          key={i}
+          className={`tick-on inline-block w-[3px] h-[10px] ${
+            i < lit ? 'bg-signal-blue' : 'bg-hairline-strong opacity-60'
+          }`}
+          style={{ animationDelay: i < lit ? `${i * 60}ms` : '0ms' }}
+        />
+      ))}
     </span>
   )
 }
@@ -838,5 +976,221 @@ function ScoreCell({ value }: { value: number }) {
       </span>
       <span className={`tabular-nums ${tone}`}>{value}</span>
     </span>
+  )
+}
+
+function TrendQueryRow({
+  source, queryParams, result, isLast, t, lang,
+}: {
+  source: TrendSource
+  queryParams: import('../lib/trends/types').TrendQuery
+  result: TrendResult | undefined
+  isLast: boolean
+  t: Dict
+  lang: Lang
+}) {
+  const [open, setOpen] = useState(false)
+  const label = lang === 'zh' ? TREND_SOURCE_LABEL_ZH[source] : TREND_SOURCE_LABEL_EN[source]
+  const params: string[] = []
+  if (queryParams.keywords?.length) params.push(`kw: ${queryParams.keywords.join(', ')}`)
+  if (queryParams.region) params.push(`region: ${queryParams.region}`)
+  if (queryParams.gameTitles?.length) params.push(`games: ${queryParams.gameTitles.join(', ')}`)
+  if (queryParams.subreddits?.length) params.push(`subs: ${queryParams.subreddits.map(s => 'r/' + s).join(', ')}`)
+  if (queryParams.category) params.push(`cat: ${queryParams.category}`)
+  if (queryParams.timeframe) params.push(`tf: ${queryParams.timeframe}`)
+
+  return (
+    <div className={`${isLast ? '' : 'border-b border-hairline'}`}>
+      <button onClick={() => setOpen(o => !o)} className="w-full text-left px-500 py-400 flex items-start gap-400 hover:bg-surface-2 transition-colors duration-150 ease-console">
+        <span className="shrink-0 text-ink-secondary pt-100">{TREND_ICON[source]}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-300 flex-wrap">
+            <div className="flex items-center gap-300 min-w-0 font-mono">
+              <span className="text-200 font-semibold text-ink-primary">{label}</span>
+              <span className="text-100 text-ink-tertiary truncate">{params.join(' · ')}</span>
+            </div>
+            <div className="flex items-center gap-300 shrink-0 font-mono text-100">
+              <TrendStatusBadge result={result} pendingLabel={t.data_pending} failedLabel={t.data_failed} />
+              <ChevronDown className={`w-3 h-3 text-ink-tertiary transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+          {result?.ok && !open && (
+            <p className="mt-200 text-100 text-ink-tertiary leading-relaxed line-clamp-2">{result.summary}</p>
+          )}
+          {result && !result.ok && !open && (
+            <p className="mt-200 text-100 text-signal-amber leading-relaxed line-clamp-2 font-mono">{result.error}</p>
+          )}
+        </div>
+      </button>
+      {open && result?.ok && (
+        <div className="px-500 pb-400 -mt-100 ml-1100">
+          <div className="rounded-2 bg-surface-2 border border-hairline px-400 py-300 max-h-[360px] overflow-y-auto">
+            <div
+              className="prose-console font-sans text-100 leading-[1.7]"
+              dangerouslySetInnerHTML={{ __html: marked.parse(result.digest, { breaks: true }) as string }}
+            />
+          </div>
+          {result.datapoints && result.datapoints.length > 0 && (
+            <DatapointSpark points={result.datapoints} />
+          )}
+        </div>
+      )}
+      {open && result && !result.ok && (
+        <div className="px-500 pb-400 -mt-100 ml-1100">
+          <div className="rounded-2 bg-surface-2 border border-signal-amber/30 px-400 py-300">
+            <div className="text-100 font-mono uppercase tracking-[0.15em] text-signal-amber mb-200">error</div>
+            <p className="text-100 font-mono text-ink-secondary leading-relaxed">{result.error}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TrendStatusBadge({ result, pendingLabel, failedLabel }: { result: TrendResult | undefined; pendingLabel: string; failedLabel: string }) {
+  if (!result) {
+    return (
+      <span className="inline-flex items-center gap-200 text-signal-blue">
+        <Loader className="w-3 h-3 animate-spin" />
+        <span className="font-semibold tracking-wider uppercase">{pendingLabel}</span>
+      </span>
+    )
+  }
+  if (result.ok) {
+    return (
+      <span className="inline-flex items-center gap-200 text-signal-green">
+        <Check className="w-3 h-3" strokeWidth={2} />
+        <span className="font-semibold tracking-wider">OK</span>
+        <span className="text-ink-tertiary tabular-nums">{result.latencyMs}ms</span>
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-200 text-signal-amber">
+      <Ban className="w-3 h-3" strokeWidth={2} />
+      <span className="font-semibold tracking-wider">{failedLabel}</span>
+    </span>
+  )
+}
+
+function DatapointSpark({ points }: { points: Array<{ label: string; value: number; meta?: Record<string, string | number> }> }) {
+  const max = Math.max(...points.map(p => p.value), 1)
+  return (
+    <div className="mt-300 rounded-2 bg-surface-2 border border-hairline px-400 py-300">
+      <div className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary mb-300">datapoints · top {points.length}</div>
+      <div className="space-y-200">
+        {points.slice(0, 10).map((p, i) => (
+          <div key={i} className="flex items-center gap-300 font-mono text-100">
+            <span className="text-ink-tertiary tabular-nums shrink-0 w-700">{String(i + 1).padStart(2, '0')}</span>
+            <span className="text-ink-secondary truncate flex-1 min-w-0">{p.label}</span>
+            <span className="inline-block w-1600 h-100 bg-hairline overflow-hidden shrink-0">
+              <span className="block h-full bg-signal-blue" style={{ width: `${(p.value / max) * 100}%` }} />
+            </span>
+            <span className="text-ink-primary tabular-nums shrink-0 w-1100 text-right">{fmtNumDisplay(p.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function fmtNumDisplay(n: number): string {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B'
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return String(n)
+}
+
+// Rolling number: re-mounts each digit on value change to trigger the rollUp animation.
+function RollingNumber({ value, className }: { value: string; className?: string }) {
+  return (
+    <span className={`inline-flex tabular-nums ${className ?? ''}`}>
+      {value.split('').map((ch, i) => (
+        <span key={`${i}-${ch}`} className="roll-num inline-block" style={{ minWidth: ch === '.' ? '4px' : '0.7ch' }}>
+          {ch}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+// Pipeline panel: vertical flow diagram with status-aware nodes and animated connectors.
+// Connectors animate (stroke-dashoffset) when any agent in their adjacent node is running.
+function PipelinePanel({
+  label, nodes, agents, running,
+}: {
+  label: string
+  nodes: { agents: AgentName[] | AgentName; label: string }[]
+  agents: Record<AgentName, AgentState>
+  running: boolean
+}) {
+  // Compute a node's status as the highest-priority status among its agent(s):
+  // running > retry > done > queued > idle. Composite nodes (4-parallel) summarize.
+  function statusOf(group: AgentName[] | AgentName): AgentStatus {
+    const arr = Array.isArray(group) ? group : [group]
+    const states = arr.map(a => agents[a]?.status ?? 'idle')
+    if (states.some(s => s === 'running')) return 'running'
+    if (states.some(s => s === 'retry')) return 'retry'
+    if (states.every(s => s === 'done')) return 'done'
+    if (states.some(s => s === 'queued')) return 'queued'
+    return 'idle'
+  }
+
+  const nodeStatuses = nodes.map(n => statusOf(n.agents))
+
+  function dotColor(s: AgentStatus): string {
+    switch (s) {
+      case 'running': return 'bg-signal-blue'
+      case 'retry':   return 'bg-signal-amber'
+      case 'done':    return 'bg-signal-green'
+      case 'queued':  return 'bg-ink-secondary'
+      default:        return 'bg-ink-tertiary/40'
+    }
+  }
+  function textColor(s: AgentStatus): string {
+    switch (s) {
+      case 'running': return 'text-ink-primary'
+      case 'retry':   return 'text-signal-amber'
+      case 'done':    return 'text-ink-primary'
+      case 'queued':  return 'text-ink-secondary'
+      default:        return 'text-ink-tertiary'
+    }
+  }
+  function connectorActive(i: number): boolean {
+    if (!running) return false
+    return nodeStatuses[i] === 'running' || nodeStatuses[i + 1] === 'running'
+  }
+
+  return (
+    <div className="rounded-4 border border-hairline bg-surface px-500 py-500 relative overflow-hidden">
+      <div className="text-ink-tertiary uppercase tracking-[0.18em] text-[10px] font-mono mb-400">{label}</div>
+
+      <div className="relative">
+        {nodes.map((n, i) => {
+          const s = nodeStatuses[i]
+          const isLast = i === nodes.length - 1
+          return (
+            <div key={i} className="relative">
+              <div className="flex items-start gap-300 py-200">
+                <span className="relative shrink-0 flex flex-col items-center" style={{ width: 10, paddingTop: 6 }}>
+                  <span
+                    className={`block w-[8px] h-[8px] rounded-full ${dotColor(s)} ${s === 'running' ? 'animate-pulseDot' : ''}`}
+                    style={{ boxShadow: s === 'running' ? '0 0 8px rgba(0,112,243,0.6)' : undefined }}
+                  />
+                  {!isLast && (
+                    <span className="relative w-[1px] mt-100" style={{ height: 26 }}>
+                      <span
+                        className={`absolute inset-0 ${connectorActive(i) ? 'bg-gradient-to-b from-signal-blue to-signal-blue/20 animate-pulse' : 'bg-hairline-strong'}`}
+                      />
+                    </span>
+                  )}
+                </span>
+                <span className={`font-mono text-100 leading-[1.5] ${textColor(s)}`}>{n.label}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
