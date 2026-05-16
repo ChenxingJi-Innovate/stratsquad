@@ -10,12 +10,32 @@ See parent workspace `../CLAUDE.md` for shared context, glossary, and house styl
 Strategy question (+ optional corpus paste)
   → Orchestrator: decompose into 4 sub-briefs
   → RAG retrieval: trend brief → embed (BGE-M3 via SiliconFlow) → top-5 chunks
-  → Parallel: Competitor / Trend / Market / Risk agents (trend gets RAG hits as citations)
+  → Trend planner: pick 4-7 sources from 9 live public APIs (region-aware)
+  → Dispatch: parallel fetch from picked sources, stream results to UI as they land
+  → Parallel: Competitor / Trend / Market / Risk agents (trend gets RAG hits + live trend bundle as citations)
   → Judge: scores each on 4 rubrics (evidence/logic/actionability/novelty), 0-100, threshold 70
   → Retry: any sub-agent below threshold gets one fresh attempt with a stricter prompt
   → Re-judge after retries
   → Composer: integrate 4 outputs into a 战略简报.md
 ```
+
+## Live trend data sources (lib/trends/)
+
+9 public data sources the trend planner can pick from. Region-aware: planner skips Chinese sources for SEA questions and vice versa.
+
+| Source | Needs key | What it returns |
+|---|---|---|
+| google-trends | no | Interest-over-time + related queries for 1-5 keywords in a region |
+| steam | no (key optional) | Current player counts; Top 10 most-played or specific titles |
+| twitch | `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` | Top game viewership / streams per game |
+| reddit | `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` + `REDDIT_USER_AGENT` | 30-day top posts per subreddit + aggregate scores |
+| youtube | `YOUTUBE_API_KEY` | Top videos for keywords in a region, with view + like counts |
+| appstore | no | iTunes RSS top-free + top-grossing games per country (15 countries supported) |
+| huya | no | Mainland China livestream category viewer counts (`live.huya.com/liveHttpUI/getLiveList`) |
+| douyu | no | Mainland China livestream rank list per category (`douyu.com/japi/weblist/.../getRanklistByCateId`) |
+| bilibili | no | Either live-area aggregates (game categories) or video search top results |
+
+All sources gracefully return `{ ok: false, error }` on failure; trend agent runs even with zero live results.
 
 ## File layout
 
@@ -84,10 +104,31 @@ corpus/, data/, eval/        knowledge base, embeddings, labeled eval set
 
 ```bash
 npm install
-echo "DEEPSEEK_API_KEY=sk-xxx" > .env.local
+cat > .env.local <<'EOF'
+# Required
+DEEPSEEK_API_KEY=sk-xxx
+
+# Optional: BGE-M3 RAG over corpus/*.md
+SILICONFLOW_API_KEY=sk-xxx
+
+# Optional: live trend data sources (each is independent; missing keys → that source silently skipped)
+TWITCH_CLIENT_ID=...
+TWITCH_CLIENT_SECRET=...
+REDDIT_CLIENT_ID=...
+REDDIT_CLIENT_SECRET=...
+REDDIT_USER_AGENT=stratsquad/0.1 by <your_reddit_username>
+YOUTUBE_API_KEY=AIzaSy...
+STEAM_API_KEY=...
+EOF
 npm run dev
 # http://localhost:3002
 ```
+
+Key registration:
+- **Twitch**: https://dev.twitch.tv/console/apps → Register application (free)
+- **Reddit**: https://www.reddit.com/prefs/apps → "create another app" → script type (free)
+- **YouTube**: https://console.cloud.google.com/apis/credentials → enable YouTube Data API v3 → API key (free, 10K units/day)
+- **Steam** (optional): https://steamcommunity.com/dev/apikey
 
 ## RAG specifics
 

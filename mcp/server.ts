@@ -106,11 +106,19 @@ async function main() {
             `[#${i + 1}] **${h.source}**${h.heading ? ` · §${h.heading}` : ''} · sim ${h.score.toFixed(3)}\n${h.text.slice(0, 240)}${h.text.length > 240 ? '…' : ''}`
           ).join('\n\n')
 
+      const trendMd = !result.trendBundle || result.trendBundle.results.length === 0
+        ? '_(无实时趋势数据：planner 未选源或所有源均失败)_'
+        : result.trendBundle.results.map(r =>
+            r.ok
+              ? `**${r.label}** (${r.source}, ${r.latencyMs}ms): ${r.summary}`
+              : `**${r.label}** (${r.source}, FAILED): ${r.error}`
+          ).join('\n\n')
+
       const retriesMd = result.retries.length > 0
         ? `\n\n_(本次有 ${result.retries.length} 位 Agent 触发了 retry: ${result.retries.join(', ')})_`
         : ''
 
-      const text = `# 战略简报\n\n${result.brief}\n\n---\n\n## 评委评分\n\n${scoresMd}${retriesMd}\n\n---\n\n## RAG 命中 (top-${result.hits.length})\n\n${hitsMd}\n`
+      const text = `# 战略简报\n\n${result.brief}\n\n---\n\n## 评委评分\n\n${scoresMd}${retriesMd}\n\n---\n\n## 实时趋势数据\n\n${trendMd}\n\n---\n\n## RAG 命中 (top-${result.hits.length})\n\n${hitsMd}\n`
 
       return { content: [{ type: 'text', text }] }
     }

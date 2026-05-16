@@ -52,6 +52,10 @@ export type RagHit = {
   score: number
 }
 
+// ─── Trend data (re-exported) ────────────────────────────────────────────────
+import type { TrendQueryPlan, TrendResult, TrendDataBundle } from './trends/types'
+export type { TrendQuery, TrendResult, TrendQueryPlan, TrendDataBundle, TrendSource, TrendDatapoint } from './trends/types'
+
 // ─── Streaming event protocol ────────────────────────────────────────────────
 // Server emits these as SSE `data:` lines; UI deserializes into a timeline.
 export type StreamEvent =
@@ -60,6 +64,9 @@ export type StreamEvent =
   | { type: 'agent_done'; agent: AgentName; content: string }
   | { type: 'plan'; subtasks: Subtask[] }
   | { type: 'rag_hits'; query: string; hits: RagHit[] }
+  | { type: 'trend_plan'; plan: TrendQueryPlan }
+  | { type: 'trend_result'; result: TrendResult }
+  | { type: 'trend_bundle'; bundle: TrendDataBundle }
   | { type: 'subagents_done'; outputs: Record<SubAgent, string> }
   | { type: 'judge'; scores: JudgeScore[] }
   | { type: 'retry'; agent: SubAgent; reason: string }
@@ -72,6 +79,7 @@ export type FullResult = {
   question: string
   plan: Subtask[]
   ragHits: RagHit[]
+  trendBundle: TrendDataBundle | null
   outputs: Record<SubAgent, string>
   scores: JudgeScore[]
   brief: string
