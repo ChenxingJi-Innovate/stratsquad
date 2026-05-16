@@ -1,5 +1,5 @@
 import type { EventSink } from './stream'
-import type { RagHit, SubAgent, TrendDataBundle } from './types'
+import type { RagHit, SubAgent, TrendDataBundle, TrendSource, UserChunk } from './types'
 import { runOrchestrator } from './agents/orchestrator'
 import { runCompetitor } from './agents/competitor'
 import { runTrend } from './agents/trend'
@@ -7,17 +7,20 @@ import { runMarket } from './agents/market'
 import { runRisk } from './agents/risk'
 import { runJudge } from './agents/judge'
 import { runComposer } from './agents/composer'
-import { retrieve } from './rag/retrieve'
+import { retrieve, retrieveHybrid } from './rag/retrieve'
 import { loadStore } from './rag/store'
 import { runTrendPlanner } from './trends/planner'
 import { dispatchTrendQueries } from './trends/dispatch'
 
-// Shared multi-agent pipeline. Used by both /api/run (SSE streaming) and the
-// MCP server (buffer-collecting). The only difference between them is the EventSink
-// the caller passes in.
+export type PipelineInput = {
+  question: string
+  enabledSources?: TrendSource[]
+  userChunks?: UserChunk[]
+  corpus?: string                // kept for MCP back-compat; passed to orchestrator as plain text
+}
+
 export async function runPipeline(
-  question: string,
-  corpus: string,
+  input: PipelineInput,
   sink: EventSink,
 ): Promise<{
   plan: Awaited<ReturnType<typeof runOrchestrator>>
@@ -28,35 +31,43 @@ export async function runPipeline(
   retries: SubAgent[]
   brief: string
 }> {
+  const { question, enabledSources, userChunks = [], corpus = '' } = input
+
   // 1. Orchestrator decomposes the question into 4 sub-briefs.
   const plan = await runOrchestrator(question, corpus, sink)
   sink.emit({ type: 'plan', subtasks: plan })
 
   const briefOf = (a: SubAgent) => plan.find(p => p.agent === a)?.brief ?? ''
 
-  // 2. RAG retrieval (best-effort; never block the run if it fails).
+  // 2. RAG retrieval — hybrid: static corpus + user-uploaded chunks, with BGE-reranker.
+  //    Falls back to corpus-only if no user chunks; to nothing if SILICONFLOW key missing.
   let hits: RagHit[] = []
   if (process.env.SILICONFLOW_API_KEY) {
-    const store = await loadStore()
-    if (store.length > 0) {
-      try {
-        hits = await retrieve(briefOf('trend'), 5)
-        sink.emit({ type: 'rag_hits', query: briefOf('trend'), hits })
-      } catch (e: any) {
-        console.error('retrieve failed:', e?.message)
+    try {
+      const trendBrief = briefOf('trend')
+      if (userChunks.length > 0) {
+        hits = await retrieveHybrid(trendBrief, userChunks, 20, 5)
+      } else {
+        const store = await loadStore()
+        if (store.length > 0) hits = await retrieve(trendBrief, 5)
       }
+      sink.emit({ type: 'rag_hits', query: briefOf('trend'), hits })
+    } catch (e: any) {
+      console.error('retrieve failed:', e?.message)
     }
   }
 
-  // 3. Trend data planning + dispatch (best-effort; trend agent works even with 0 results).
+  // 3. Trend data planning + dispatch (respects user's enabledSources selection).
   let trendBundle: TrendDataBundle | null = null
-  try {
-    const trendPlan = await runTrendPlanner(briefOf('trend'), question, sink)
-    if (trendPlan.queries.length > 0) {
-      trendBundle = await dispatchTrendQueries(trendPlan, sink)
+  if (!enabledSources || enabledSources.length > 0) {
+    try {
+      const trendPlan = await runTrendPlanner(briefOf('trend'), question, sink, enabledSources)
+      if (trendPlan.queries.length > 0) {
+        trendBundle = await dispatchTrendQueries(trendPlan, sink)
+      }
+    } catch (e: any) {
+      console.error('trend dispatch failed:', e?.message)
     }
-  } catch (e: any) {
-    console.error('trend dispatch failed:', e?.message)
   }
 
   // 4. 4 sub-agents run in parallel — Promise.all so token streams interleave in the UI.

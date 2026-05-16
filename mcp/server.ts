@@ -94,7 +94,7 @@ async function main() {
       if (!question?.trim()) throw new Error('Missing required argument: question')
 
       const sink = new BufferSink()
-      const result = await runPipeline(question, corpus, sink)
+      const result = await runPipeline({ question, corpus }, sink)
 
       const scoresMd = result.scores.map(s =>
         `- **${AGENT_LABEL_ZH[s.agent]}** (${s.agent}) → 总分 **${s.total}** · 证据 ${s.evidence} · 逻辑 ${s.logic} · 可执行 ${s.actionability} · 新颖 ${s.novelty} · ${s.verdict}\n  > ${s.reason}`

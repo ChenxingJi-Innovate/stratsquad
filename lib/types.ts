@@ -54,7 +54,9 @@ export type RagHit = {
 
 // ─── Trend data (re-exported) ────────────────────────────────────────────────
 import type { TrendQueryPlan, TrendResult, TrendDataBundle } from './trends/types'
+import type { UserChunk } from './rag/types'
 export type { TrendQuery, TrendResult, TrendQueryPlan, TrendDataBundle, TrendSource, TrendDatapoint } from './trends/types'
+export type { UserChunk } from './rag/types'
 
 // ─── Streaming event protocol ────────────────────────────────────────────────
 // Server emits these as SSE `data:` lines; UI deserializes into a timeline.
@@ -71,6 +73,10 @@ export type StreamEvent =
   | { type: 'judge'; scores: JudgeScore[] }
   | { type: 'retry'; agent: SubAgent; reason: string }
   | { type: 'brief'; markdown: string }
+  // KB ingest events (emitted by /api/kb/ingest; share SSEWriter wire format).
+  | { type: 'chunking'; size: number }
+  | { type: 'embedding' }
+  | { type: 'ready'; chunks: UserChunk[] }
   | { type: 'complete' }
   | { type: 'error'; message: string }
 

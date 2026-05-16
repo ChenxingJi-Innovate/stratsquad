@@ -21,4 +21,16 @@ export type RagHit = {
   heading?: string
   text: string
   score: number         // cosine similarity, 0..1 (assuming normalized vectors)
+  origin?: 'corpus' | 'user'        // which side it came from (static corpus vs user upload)
+  rerankScore?: number               // post-reranker score (0..1), only present if reranker ran
+}
+
+// A chunk uploaded by the user as part of their knowledge base. Lives client-side
+// in browser state, sent with each /api/run request alongside the question.
+export type UserChunk = {
+  id: string                         // `${docId}#${idx}`
+  text: string
+  embedding: number[]                // 1024-dim BGE-M3
+  source: string                     // doc name (filename or URL host)
+  heading?: string
 }
