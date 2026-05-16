@@ -5,16 +5,31 @@ import {
   AlertCircle, Brain, Target, TrendingUp,
   Globe, ShieldAlert, Scale, FileText, RotateCw, Download, Copy, ChevronDown,
   Database, Terminal, Play, Square, Activity, Languages,
-  Search, Video, Gamepad2, MessageSquare, Smartphone, Tv, Radio, MonitorPlay,
   Check, Ban, Loader,
-  Upload, Link as LinkIcon, Trash2, X,
+  Upload, Link as LinkIcon, Trash2, X, ExternalLink,
 } from 'lucide-react'
 import type { AgentName, StreamEvent, Subtask, JudgeScore, SubAgent, FullResult, RagHit, TrendQueryPlan, TrendResult, TrendSource } from '../lib/types'
 import { AGENT_LABEL_ZH, AGENT_LABEL_EN, JUDGE_PASS_THRESHOLD } from '../lib/types'
 import { TREND_SOURCE_LABEL_ZH, TREND_SOURCE_LABEL_EN } from '../lib/trends/types'
 import type { UserChunk } from '../lib/rag/types'
+import {
+  GoogleIcon, SteamIcon, TwitchIcon, RedditIcon, YouTubeIcon,
+  AppStoreIcon, HuyaIcon, DouyuIcon, BilibiliIcon,
+} from '../lib/icons/brands'
 
 const ALL_SOURCES: TrendSource[] = ['google-trends', 'steam', 'twitch', 'reddit', 'youtube', 'appstore', 'huya', 'douyu', 'bilibili']
+
+const PLATFORM_URL: Record<TrendSource, string> = {
+  'google-trends': 'https://trends.google.com/trends/',
+  'steam':         'https://store.steampowered.com/',
+  'twitch':        'https://www.twitch.tv/directory/category/just-chatting',
+  'reddit':        'https://www.reddit.com/r/gaming/',
+  'youtube':       'https://www.youtube.com/gaming',
+  'appstore':      'https://apps.apple.com/genre/ios-games/id6014',
+  'huya':          'https://www.huya.com/g',
+  'douyu':         'https://www.douyu.com/directory/all',
+  'bilibili':      'https://www.bilibili.com/v/popular/all/',
+}
 
 type KBDocStatus = 'chunking' | 'embedding' | 'ready' | 'failed'
 type KBDoc = {
@@ -29,15 +44,15 @@ type KBDoc = {
 }
 
 const TREND_ICON: Record<TrendSource, React.ReactNode> = {
-  'google-trends': <Search className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'steam': <Gamepad2 className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'twitch': <MonitorPlay className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'reddit': <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'youtube': <Video className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'appstore': <Smartphone className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'huya': <Tv className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'douyu': <Radio className="w-3.5 h-3.5" strokeWidth={1.5} />,
-  'bilibili': <Activity className="w-3.5 h-3.5" strokeWidth={1.5} />,
+  'google-trends': <GoogleIcon size={14} />,
+  'steam':         <SteamIcon size={14} />,
+  'twitch':        <TwitchIcon size={14} />,
+  'reddit':        <RedditIcon size={14} />,
+  'youtube':       <YouTubeIcon size={14} />,
+  'appstore':      <AppStoreIcon size={14} />,
+  'huya':          <HuyaIcon size={14} />,
+  'douyu':         <DouyuIcon size={14} />,
+  'bilibili':      <BilibiliIcon size={14} />,
 }
 
 type Lang = 'zh' | 'en'
@@ -129,7 +144,7 @@ const i18n: Record<Lang, Dict> = {
     hero_pre: '四位 Agent，围绕一个战略问题展开',
     hero_italic: '推演',
     hero_post: '。',
-    hero_desc: '编排器拆解问题，四位专家 Agent 并行作战，评委 4 维评分，低分触发重生，终稿合成战略简报。每个 token、每次检索、每条实时趋势数据、每个分数都在屏幕上。',
+    hero_desc: 'DeepSeek V4 编排 · 9 路实时趋势 · BGE-M3 hybrid RAG + reranker · 评委门控 · 全程 SSE。',
     pipeline_label: '流水线',
     pipeline_lines: [
       'orchestrator → 拆解为 4 个子简报',
@@ -146,14 +161,14 @@ const i18n: Record<Lang, Dict> = {
       { agents: 'composer', label: 'composer · 终稿战略简报' },
     ],
     sec_input: '战略问题',
-    sec_input_desc: '原样写问题。下方选择数据源 + 连接自己的知识库。',
+    sec_input_desc: '',
     q_placeholder: '例：评估 2026 下半年发布一款 MOBA 手游进入东南亚市场的窗口期...',
     platforms_label: '数据源',
-    platforms_desc: n => `${n}/9 启用 · 关闭的源不会被 planner 调度`,
+    platforms_desc: n => `${n}/9 启用`,
     platforms_all: '全选',
     platforms_clear: '全清',
-    kb_label: '你的知识库',
-    kb_desc: '拖入文件或粘贴 URL。后端 chunk + embed (BGE-M3) + 加入 RAG 检索 + reranker 精排。',
+    kb_label: '知识库',
+    kb_desc: 'BGE-M3 embed + BGE-reranker',
     kb_drop: '拖入 .md / .txt / .csv / .json 文件，或点击选择',
     kb_url_placeholder: '或粘贴一个 URL (会抓取页面文本)',
     kb_ingest_btn: '拉取并入库',
@@ -167,19 +182,19 @@ const i18n: Record<Lang, Dict> = {
     btn_run: '启动 squad',
     btn_abort: '中止',
     sec_timeline: 'AGENT 时间线',
-    sec_timeline_desc: '编排器先出 plan，4 位专家并行作战；评委低于 70 分触发 retry。全程 SSE。',
-    sec_rag: 'RAG 检索命中',
-    rag_desc: (n, avg) => `bge-m3 1024d · top-${n} cosine · 平均相似度 ${avg}`,
+    sec_timeline_desc: 'orchestrator → 4 并行 → judge → composer',
+    sec_rag: 'RAG 检索',
+    rag_desc: (n, avg) => `bge-m3 · top-${n} · avg ${avg}`,
     query_prefix: 'q:',
-    sec_data: '实时趋势数据',
-    sec_data_desc: (n, ok) => `${ok}/${n} 源命中 · 9 个公开数据源 · 规划器自动选源`,
+    sec_data: '实时趋势',
+    sec_data_desc: (n, ok) => `${ok}/${n} 命中`,
     data_rationale: '采集策略',
-    data_no_plan: '规划器未选源',
+    data_no_plan: '本轮未选源',
     data_pending: '采集中',
     data_failed: 'FAILED',
     th_source_status: '状态',
-    sec_judge: '评委评分表',
-    sec_judge_desc: `加权: 证据 0.35 · 逻辑 0.25 · 可执行 0.30 · 新颖 0.10 · 通过线 ≥ ${JUDGE_PASS_THRESHOLD}`,
+    sec_judge: '评委评分',
+    sec_judge_desc: `证据 0.35 · 逻辑 0.25 · 可执行 0.30 · 新颖 0.10 · pass ≥ ${JUDGE_PASS_THRESHOLD}`,
     th_agent: 'agent',
     th_evidence: '证据',
     th_logic: '逻辑',
@@ -187,15 +202,15 @@ const i18n: Record<Lang, Dict> = {
     th_novelty: '新颖',
     th_total: '总分',
     th_verdict: '判定',
-    sec_brief: '战略简报终稿',
-    sec_brief_desc: 'composer 整合 4 份 sub-agent 输出，给高层看的 markdown.',
-    export_desc: 'EXPORT · 完整 JSON（问题 + plan + 4 份输出 + 评分 + 简报）可直接喂 SFT 管线',
+    sec_brief: '战略简报',
+    sec_brief_desc: 'markdown',
+    export_desc: '完整 JSON · 可直接进 SFT 管线',
     copy_md: '复制 Markdown',
     download: '下载 JSON',
-    detail_dispatched: '分派的任务简报',
+    detail_dispatched: '分派任务',
     detail_output: '输出',
-    detail_streaming: '· 流式中',
-    detail_reason: '评委评语',
+    detail_streaming: '· 流式',
+    detail_reason: '评语',
     retried: '已重生',
     footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3 · bge-reranker',
     footer_credit: 'track 2 · industrial console · vercel geist + ibm carbon',
@@ -206,7 +221,7 @@ const i18n: Record<Lang, Dict> = {
     hero_pre: 'A squad of agents, ',
     hero_italic: 'debating',
     hero_post: ' one strategy question.',
-    hero_desc: 'Orchestrator decomposes the question, four expert agents argue in parallel, a judge scores them, then the composer ships a brief. Every token, every retrieval, every live trend hit, every score is on the wire.',
+    hero_desc: 'DeepSeek V4 orchestration · 9-source live trends · BGE-M3 hybrid RAG + reranker · judge-gated · full SSE.',
     pipeline_label: 'pipeline',
     pipeline_lines: [
       'orchestrator → 4 sub-briefs',
@@ -223,14 +238,14 @@ const i18n: Record<Lang, Dict> = {
       { agents: 'composer', label: 'composer · final brief' },
     ],
     sec_input: 'STRATEGY QUESTION',
-    sec_input_desc: 'Write the question verbatim. Pick data sources + connect your own knowledge base below.',
+    sec_input_desc: '',
     q_placeholder: 'e.g. Evaluate the window for launching a MOBA in SEA in H2 2026...',
     platforms_label: 'data sources',
-    platforms_desc: n => `${n}/9 enabled · disabled sources are not dispatched by the planner`,
+    platforms_desc: n => `${n}/9 active`,
     platforms_all: 'all',
     platforms_clear: 'none',
-    kb_label: 'your knowledge base',
-    kb_desc: 'Drop files or paste URL. Server-side chunk + embed (BGE-M3) + RAG retrieval + BGE-reranker.',
+    kb_label: 'knowledge base',
+    kb_desc: 'BGE-M3 embed + BGE-reranker',
     kb_drop: 'drop .md / .txt / .csv / .json here, or click to browse',
     kb_url_placeholder: 'or paste a URL (page text will be fetched)',
     kb_ingest_btn: 'ingest',
@@ -244,19 +259,19 @@ const i18n: Record<Lang, Dict> = {
     btn_run: 'run squad',
     btn_abort: 'abort',
     sec_timeline: 'AGENT TIMELINE',
-    sec_timeline_desc: 'Orchestrator issues a plan, 4 experts run in parallel, judge below 70 triggers retry. Streamed via SSE.',
+    sec_timeline_desc: 'orchestrator → 4 parallel → judge → composer',
     sec_rag: 'RAG HITS',
-    rag_desc: (n, avg) => `bge-m3 1024d · top-${n} cosine · avg ${avg}`,
+    rag_desc: (n, avg) => `bge-m3 · top-${n} · avg ${avg}`,
     query_prefix: 'q:',
-    sec_data: 'LIVE TREND DATA',
-    sec_data_desc: (n, ok) => `${ok}/${n} sources hit · 9 public APIs · planner-selected`,
+    sec_data: 'LIVE TRENDS',
+    sec_data_desc: (n, ok) => `${ok}/${n} resolved`,
     data_rationale: 'selection rationale',
-    data_no_plan: 'planner picked no sources',
+    data_no_plan: 'no sources picked',
     data_pending: 'fetching',
     data_failed: 'FAILED',
     th_source_status: 'status',
-    sec_judge: 'JUDGE RUBRIC',
-    sec_judge_desc: `weighted: evidence 0.35 · logic 0.25 · actionability 0.30 · novelty 0.10 · pass ≥ ${JUDGE_PASS_THRESHOLD}`,
+    sec_judge: 'JUDGE',
+    sec_judge_desc: `evidence 0.35 · logic 0.25 · action 0.30 · novelty 0.10 · pass ≥ ${JUDGE_PASS_THRESHOLD}`,
     th_agent: 'agent',
     th_evidence: 'evidence',
     th_logic: 'logic',
@@ -264,15 +279,15 @@ const i18n: Record<Lang, Dict> = {
     th_novelty: 'novelty',
     th_total: 'total',
     th_verdict: 'verdict',
-    sec_brief: 'COMPOSED BRIEF',
-    sec_brief_desc: 'Composer integrates 4 sub-agent outputs into a markdown brief for execs.',
-    export_desc: 'EXPORT · full JSON (question + plan + 4 outputs + scores + brief) ready for SFT pipeline',
+    sec_brief: 'BRIEF',
+    sec_brief_desc: 'markdown',
+    export_desc: 'full JSON · SFT-ready',
     copy_md: 'copy md',
-    download: 'download json',
-    detail_dispatched: 'DISPATCHED BRIEF',
+    download: 'json',
+    detail_dispatched: 'DISPATCHED',
     detail_output: 'OUTPUT',
     detail_streaming: '· streaming',
-    detail_reason: 'JUDGE REASON',
+    detail_reason: 'REASON',
     retried: 'retried',
     footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3 · bge-reranker',
     footer_credit: 'track 2 · industrial console · vercel geist + ibm carbon',
@@ -1236,18 +1251,37 @@ function PlatformPicker({
         {ALL_SOURCES.map(s => {
           const on = enabled[s]
           return (
-            <button
+            <div
               key={s}
-              onClick={() => onToggle(s)}
-              className={`inline-flex items-center gap-200 h-700 px-300 rounded-2 border text-100 font-mono transition-colors duration-150 ease-console ${
+              className={`inline-flex items-stretch rounded-2 border overflow-hidden transition-colors duration-150 ease-console ${
                 on
-                  ? 'border-signal-blue/60 bg-signal-blue-soft/60 text-signal-blue-bright'
-                  : 'border-hairline text-ink-tertiary hover:border-hairline-strong hover:text-ink-secondary'
+                  ? 'border-signal-blue/60 bg-signal-blue-soft/60'
+                  : 'border-hairline hover:border-hairline-strong'
               }`}
             >
-              <span className={on ? 'text-signal-blue' : 'text-ink-tertiary'}>{TREND_ICON[s]}</span>
-              <span>{labels[s]}</span>
-            </button>
+              <button
+                onClick={() => onToggle(s)}
+                className={`inline-flex items-center gap-200 h-700 px-300 text-100 font-mono ${
+                  on ? 'text-signal-blue-bright' : 'text-ink-tertiary hover:text-ink-secondary'
+                }`}
+                aria-pressed={on}
+              >
+                <span className={on ? 'text-signal-blue' : 'text-ink-tertiary'}>{TREND_ICON[s]}</span>
+                <span>{labels[s]}</span>
+              </button>
+              <a
+                href={PLATFORM_URL[s]}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`open ${labels[s]}`}
+                title={PLATFORM_URL[s]}
+                className={`inline-flex items-center justify-center w-700 border-l ${
+                  on ? 'border-signal-blue/40 text-signal-blue hover:bg-signal-blue/10' : 'border-hairline text-ink-tertiary hover:text-signal-blue hover:bg-surface-2'
+                } transition-colors duration-150 ease-console`}
+              >
+                <ExternalLink className="w-3 h-3" strokeWidth={1.8} />
+              </a>
+            </div>
           )
         })}
       </div>
