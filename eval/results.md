@@ -1,10 +1,10 @@
 # RAG Retrieval Evaluation
 
-Queries: 22 · scored with cosine similarity over normalized embeddings.
+Queries: 19 · scored with cosine similarity over normalized embeddings.
 
 | Model | dim | hit@5 | hit@10 | recall@5 | recall@10 | MRR |
 |-------|----:|------:|-------:|---------:|----------:|----:|
-| `BAAI/bge-m3` | 1024 | 90.9% | 95.5% | 84.8% | 92.4% | 0.841 |
+| `BAAI/bge-m3` | 1024 | 94.7% | 94.7% | 90.4% | 92.1% | 0.860 |
 
 ## What the columns mean
 
@@ -19,4 +19,4 @@ EMBED_MODEL=BAAI/bge-large-zh-v1.5 npx tsx scripts/embed.ts --out=data/embedding
 EMBED_MODEL=BAAI/bge-large-zh-v1.5 npm run rag:eval
 ```
 
-Generated: 2026-05-15T03:45:35.466Z
+Generated: 2026-05-16T22:30:01.047Z

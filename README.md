@@ -1,6 +1,6 @@
 # StratSquad · 多智能体游戏策略小组
 
-A production-ready multi-agent system for game industry strategy work. Built for the Tencent TiMi *AI 策略工程师 (实习)* JD pattern: orchestrator + sub-agents + judge + composer, all powered by DeepSeek V4 via its OpenAI-compatible API.
+A production-ready multi-agent system for game-market strategy work: orchestrator + sub-agents + judge + composer, all powered by DeepSeek V4 via its OpenAI-compatible API. Use it for window evaluation, competitor scans, monetization reads, policy-risk surveys.
 
 > 输入一个游戏战略问题，编排器拆解任务，四位专家 Agent 并行作战，评委打分，终稿合成。
 
@@ -32,19 +32,18 @@ A production-ready multi-agent system for game industry strategy work. Built for
 
 ---
 
-## Why this maps to the JD
+## Capability map
 
-| JD line                                               | How StratSquad covers it                                              |
+| Capability                                            | Implementation                                                        |
 |-------------------------------------------------------|-----------------------------------------------------------------------|
-| 推动 AI 原生工作流落地, 设计行业领先的 Agentic 工作流 | 7-agent pipeline, orchestrator-driven decomposition                   |
-| 制定 AI 运用整体规划, 撰写 PRD                        | This README + `/CLAUDE.md` are the PRD                                |
-| 维护和升级 AI 工具, 持续提升 Agent 输出质量           | Judge-driven retry loop with explicit 4-dim rubric                    |
-| (加分) 多轮工具调用 + 子 agent + 评委                 | Exactly the architecture here                                         |
-| (加分) 中文 RAG                                       | BGE-M3 over `corpus/`, brute-force cosine, labeled hit@k / MRR eval   |
-| (加分) BGE / E5 / OpenAI Embedding 调参与评测         | `npm run rag:eval` produces a side-by-side comparison table           |
-| (加分) MCP 协议 / IDE Agent 生态                      | `mcp/server.ts` exposes `stratsquad_run` + `stratsquad_retrieve` tools|
-| (加分) 后端 / 知识库开发经验                          | SSE streaming route, type-safe event protocol, RAG store, MCP server  |
-| Python / TypeScript                                   | TypeScript, OpenAI-compatible SDK pointed at DeepSeek                 |
+| Agentic workflow orchestration                        | 7-agent pipeline, orchestrator-driven decomposition                   |
+| Self-correcting outputs                               | Judge-driven retry loop with explicit 4-dim rubric                    |
+| Multi-turn tool dispatch + sub-agents + judge         | The core architecture here                                            |
+| Chinese RAG                                           | BGE-M3 over `corpus/`, brute-force cosine, labeled hit@k / MRR eval   |
+| Embedding evaluation (BGE / E5 / OpenAI)              | `npm run rag:eval` produces a side-by-side comparison table           |
+| MCP protocol / IDE-agent integration                  | `mcp/server.ts` exposes `stratsquad_run` + `stratsquad_retrieve` tools|
+| Backend / knowledge-base depth                        | SSE streaming route, type-safe event protocol, RAG store, MCP server  |
+| Language                                              | TypeScript, OpenAI-compatible SDK pointed at DeepSeek                 |
 
 ---
 
@@ -330,7 +329,7 @@ docker run -p 7860:7860 \
 
 - **More embedding models**: drop `EMBED_MODEL=...` into `.env.local` and re-run `npm run rag:embed -- --out=data/embeddings-${slug}.json`, then `npm run rag:eval` to extend the comparison table. Currently configured for SiliconFlow models; add another provider by writing a sibling of `lib/rag/embed.ts`.
 - **Hybrid retrieval**: layer BM25 (lexical) over BGE (dense) and rerank — typically +5-10pp recall@5 for technical queries. Bun's built-in regex tokenizer + a 50-line BM25 implementation is enough.
-- **MCP server wrapper**: expose `/api/run` as an MCP tool so Claude Desktop / Cursor can invoke the squad directly. Covers JD bonus "MCP 协议 / IDE Agent 生态".
+- **MCP server wrapper**: expose `/api/run` as an MCP tool so Claude Desktop / Cursor can invoke the squad directly.
 - **Tool calling**: give the competitor agent a real Sensor Tower / GameLook scraper as a tool. Currently it relies on parametric knowledge.
 - **SFT export**: rate each composed brief 1-5 stars, package as JSONL for fine-tuning a domain-specific strategy writer.
 - **Eval the LLM, not just the retriever**: build a ~30 strategy question rubric set, compare DeepSeek V4 / V4-Flash / Reasoner / GPT-4o head-to-head.
@@ -345,4 +344,4 @@ UI follows the workspace standard: Pinterest Gestalt tokens (4px grid, 6 font si
 
 ## License
 
-MIT, internal demo. Built for interview / portfolio use.
+MIT. Open-source tool for game-industry strategy research.

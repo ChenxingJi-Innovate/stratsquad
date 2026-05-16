@@ -153,29 +153,29 @@ type Dict = {
 
 const i18n: Record<Lang, Dict> = {
   zh: {
-    brand_subtitle: '多智能体推演控制台',
-    runtime_ready: 'stratsquad / 运行时就绪',
-    eyebrow_issue: 'ISSUE 02 · STRATEGY CONSOLE · V0.3',
-    eyebrow_status: 'STREAMING',
-    hero_pre: '四位 Agent，围绕一个战略问题展开',
+    brand_subtitle: '游戏市场策略调研控制台',
+    runtime_ready: '运行时就绪',
+    eyebrow_issue: '战情通道 · 公开 · 频段 02',
+    eyebrow_status: '实时',
+    hero_pre: '四位智能体，围绕一个战略问题展开',
     hero_emphasis: '推演',
     hero_post: '。',
-    hero_desc: '编排器拆解 · 4 专家并行 · 9 源实时趋势 · BGE-M3 hybrid RAG + reranker · 评委门控 · 全程 SSE',
-    spec_strip: ['DEEPSEEK V4', '9 LIVE SOURCES', 'BGE-M3 + RERANKER', 'JUDGE-GATED', 'STREAMING'],
+    hero_desc: '编排器拆解 · 四专家并行 · 九路实时趋势 · BGE-M3 混合检索 + 精排器 · 评委门控 · 全程流式',
+    spec_strip: ['DeepSeek V4', '九路实时数据源', 'BGE-M3 + 精排器', '评委门控', '流式'],
     pipeline_label: '流水线',
     pipeline_lines: [
-      'orchestrator → 拆解为 4 个子简报',
-      'rag.retrieve → top-5 相关片段',
-      'competitor · trend · market · risk（并行）',
-      `judge → 4 维评分，< ${JUDGE_PASS_THRESHOLD} 触发 retry`,
-      'composer → 输出最终战略简报',
+      '编排器 → 拆解为 4 个子简报',
+      'RAG 检索 → 召回前 5 段',
+      '竞品 · 趋势 · 区域 · 风险（并行）',
+      `评委 → 4 维评分，低于 ${JUDGE_PASS_THRESHOLD} 触发重生`,
+      '合成器 → 输出最终战略简报',
     ],
     pipeline_nodes: [
-      { agents: 'orchestrator', label: 'orchestrator · 拆解 4 个子简报' },
-      { agents: 'orchestrator', label: 'rag + 9 源 trend planner' },
-      { agents: ['competitor', 'trend', 'market', 'risk'], label: 'competitor · trend · market · risk（并行）' },
-      { agents: 'judge', label: `judge · 4 维评分，< ${JUDGE_PASS_THRESHOLD} 触发 retry` },
-      { agents: 'composer', label: 'composer · 终稿战略简报' },
+      { agents: 'orchestrator', label: '编排器 · 拆解 4 个子简报' },
+      { agents: 'orchestrator', label: 'RAG + 九路趋势规划器' },
+      { agents: ['competitor', 'trend', 'market', 'risk'], label: '竞品 · 趋势 · 区域 · 风险（并行）' },
+      { agents: 'judge', label: `评委 · 4 维评分，低于 ${JUDGE_PASS_THRESHOLD} 触发重生` },
+      { agents: 'composer', label: '合成器 · 终稿战略简报' },
     ],
     sec_input: '战略问题',
     sec_input_desc: '',
@@ -185,34 +185,34 @@ const i18n: Record<Lang, Dict> = {
     platforms_all: '全选',
     platforms_clear: '全清',
     kb_label: '知识库',
-    kb_desc: 'BGE-M3 embed + BGE-reranker',
+    kb_desc: 'BGE-M3 向量化 + BGE 精排器',
     kb_drop: '拖入 .md / .txt / .csv / .json 文件，或点击选择',
-    kb_url_placeholder: '或粘贴一个 URL (会抓取页面文本)',
+    kb_url_placeholder: '或粘贴一个 URL（会抓取页面文本）',
     kb_ingest_btn: '拉取并入库',
     kb_remove: '移除',
-    kb_chunks: n => `${n} chunk`,
-    kb_status_chunking: 'CHUNKING',
-    kb_status_embedding: 'EMBEDDING',
-    kb_status_ready: 'READY',
-    kb_status_failed: 'FAILED',
+    kb_chunks: n => `${n} 段`,
+    kb_status_chunking: '切片中',
+    kb_status_embedding: '向量化',
+    kb_status_ready: '就绪',
+    kb_status_failed: '失败',
     chars: '字',
-    btn_run: '启动 squad',
+    btn_run: '启动推演',
     btn_abort: '中止',
-    sec_timeline: 'AGENT 时间线',
-    sec_timeline_desc: 'orchestrator → 4 并行 → judge → composer',
+    sec_timeline: '智能体时间线',
+    sec_timeline_desc: '编排器 → 4 并行 → 评委 → 合成器',
     sec_rag: 'RAG 检索',
-    rag_desc: (n, avg) => `bge-m3 · top-${n} · avg ${avg}`,
-    query_prefix: 'q:',
+    rag_desc: (n, avg) => `BGE-M3 · 前 ${n} 命中 · 平均相似度 ${avg}`,
+    query_prefix: '查询：',
     sec_data: '实时趋势',
     sec_data_desc: (n, ok) => `${ok}/${n} 命中`,
     data_rationale: '采集策略',
     data_no_plan: '本轮未选源',
     data_pending: '采集中',
-    data_failed: 'FAILED',
+    data_failed: '失败',
     th_source_status: '状态',
     sec_judge: '评委评分',
-    sec_judge_desc: `证据 0.35 · 逻辑 0.25 · 可执行 0.30 · 新颖 0.10 · pass ≥ ${JUDGE_PASS_THRESHOLD}`,
-    th_agent: 'agent',
+    sec_judge_desc: `证据 0.35 · 逻辑 0.25 · 可执行 0.30 · 新颖 0.10 · 通过线 ≥ ${JUDGE_PASS_THRESHOLD}`,
+    th_agent: '智能体',
     th_evidence: '证据',
     th_logic: '逻辑',
     th_action: '可执行',
@@ -220,28 +220,28 @@ const i18n: Record<Lang, Dict> = {
     th_total: '总分',
     th_verdict: '判定',
     sec_brief: '战略简报',
-    sec_brief_desc: 'markdown',
+    sec_brief_desc: 'Markdown',
     export_desc: '完整 JSON · 可直接进 SFT 管线',
     copy_md: '复制 Markdown',
     download: '下载 JSON',
     detail_dispatched: '分派任务',
     detail_output: '输出',
-    detail_streaming: '· 流式',
+    detail_streaming: '· 流式中',
     detail_reason: '评语',
     retried: '已重生',
-    footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3 · bge-reranker',
-    footer_credit: 'track 2 · industrial console · vercel geist + ibm carbon',
+    footer_subtitle: '游戏市场策略调研控制台 · DeepSeek V4 · BGE-M3 · BGE 精排器',
+    footer_credit: '工业控制台 · 暗色 FUI · Territory Studio 风格',
   },
   en: {
-    brand_subtitle: 'multi-agent inference console',
-    runtime_ready: 'stratsquad / runtime ready',
-    eyebrow_issue: 'ISSUE 02 · STRATEGY CONSOLE · V0.3',
-    eyebrow_status: 'STREAMING',
+    brand_subtitle: 'game-industry strategy research console',
+    runtime_ready: 'RUNTIME READY',
+    eyebrow_issue: 'INTEL CHANNEL · OPEN · BAND 02',
+    eyebrow_status: 'LIVE',
     hero_pre: 'A squad of agents, ',
     hero_emphasis: 'debating',
     hero_post: ' one strategy question.',
-    hero_desc: 'Orchestrator decomposes · 4 experts parallel · 9 live trend sources · BGE-M3 hybrid RAG + reranker · judge-gated · full SSE',
-    spec_strip: ['DEEPSEEK V4', '9 LIVE SOURCES', 'BGE-M3 + RERANKER', 'JUDGE-GATED', 'STREAMING'],
+    hero_desc: 'Orchestrator decomposes · 4 experts in parallel · 9 live trend sources · BGE-M3 hybrid RAG + reranker · judge-gated · full SSE',
+    spec_strip: ['DeepSeek V4', '9 Live Sources', 'BGE-M3 + Reranker', 'Judge-Gated', 'Streaming'],
     pipeline_label: 'pipeline',
     pipeline_lines: [
       'orchestrator → 4 sub-briefs',
@@ -309,8 +309,8 @@ const i18n: Record<Lang, Dict> = {
     detail_streaming: '· streaming',
     detail_reason: 'REASON',
     retried: 'retried',
-    footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3 · bge-reranker',
-    footer_credit: 'track 2 · industrial console · vercel geist + ibm carbon',
+    footer_subtitle: 'game-industry strategy research console · DeepSeek V4 · BGE-M3 · BGE reranker',
+    footer_credit: 'industrial console · Territory Studio FUI',
   },
 }
 
@@ -620,6 +620,7 @@ export default function Home() {
         {/* HERO — editorial-grade Track 2: eyebrow strip, massive type, spec strip, side pipeline */}
         <section className="pt-700 pb-1000 relative">
           <div className="hero-backdrop" aria-hidden />
+          <div className="scanline-overlay" aria-hidden />
 
           {/* Eyebrow strip: issue label + status pulse */}
           <div className="relative flex items-center justify-between gap-400 mb-700 text-[10px] font-mono tracking-[0.22em] uppercase">
@@ -644,11 +645,11 @@ export default function Home() {
                 {t.hero_desc}
               </p>
             </div>
-            <PipelinePanel
-              label={t.pipeline_label}
-              nodes={t.pipeline_nodes}
-              agents={agents}
-              running={running}
+            <HUDSourceGrid
+              enabled={enabledSources}
+              results={trendResults}
+              lang={lang}
+              runningState={running ? 'running' : trendResults.length > 0 ? 'done' : 'idle'}
             />
           </div>
 
@@ -674,7 +675,7 @@ export default function Home() {
         <section id="input" className="mb-1200">
           <SectionRow label="01" title={t.sec_input} desc={t.sec_input_desc} />
 
-          <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
+          <HUDFrame className="border border-hairline bg-surface overflow-hidden">
             <textarea
               className="w-full h-44 px-500 py-400 text-200 bg-transparent resize-y outline-none placeholder:text-ink-tertiary leading-relaxed font-sans"
               placeholder={t.q_placeholder}
@@ -722,7 +723,7 @@ export default function Home() {
                 </button>
               )}
             </div>
-          </div>
+          </HUDFrame>
         </section>
 
         {/* TIMELINE */}
@@ -747,7 +748,7 @@ export default function Home() {
               }
             />
 
-            <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
+            <HUDFrame isActive={running} className="border border-hairline bg-surface overflow-hidden">
               {AGENT_ORDER.map((name, i) => (
                 <AgentRow
                   key={name}
@@ -762,7 +763,7 @@ export default function Home() {
                   t={t}
                 />
               ))}
-            </div>
+            </HUDFrame>
           </section>
         )}
 
@@ -780,9 +781,9 @@ export default function Home() {
               }
             />
 
-            <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
+            <HUDFrame className="border border-hairline bg-surface overflow-hidden">
               {ragHits.map((h, i) => <RagHitRow key={h.id} hit={h} rank={i + 1} isLast={i === ragHits.length - 1} />)}
-            </div>
+            </HUDFrame>
           </section>
         )}
 
@@ -798,7 +799,7 @@ export default function Home() {
               )}
             />
 
-            <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
+            <HUDFrame isActive={running && trendResults.length < (trendPlan?.queries.length ?? 0)} className="border border-hairline bg-surface overflow-hidden">
               {trendPlan && trendPlan.rationale && (
                 <div className="px-500 py-400 border-b border-hairline bg-surface-2/40">
                   <div className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary mb-200">
@@ -826,7 +827,7 @@ export default function Home() {
                   />
                 )
               })}
-            </div>
+            </HUDFrame>
           </section>
         )}
 
@@ -838,7 +839,7 @@ export default function Home() {
               title={t.sec_judge}
               desc={t.sec_judge_desc}
             />
-            <div className="rounded-4 border border-hairline bg-surface overflow-x-auto">
+            <HUDFrame className="border border-hairline bg-surface overflow-x-auto">
               <table className="w-full font-mono text-100">
                 <thead>
                   <tr className="border-b border-hairline text-ink-tertiary uppercase tracking-[0.15em] text-[11px]">
@@ -855,7 +856,7 @@ export default function Home() {
                   {scores.map(s => <ScoreRow key={s.agent} score={s} />)}
                 </tbody>
               </table>
-            </div>
+            </HUDFrame>
           </section>
         )}
 
@@ -863,13 +864,13 @@ export default function Home() {
         {brief && (
           <section className="mb-1200 animate-fadeIn">
             <SectionRow label="06" title={t.sec_brief} desc={t.sec_brief_desc} />
-            <div className="rounded-4 border border-hairline bg-surface p-700 sm:p-900">
+            <HUDFrame className="border border-hairline bg-surface p-700 sm:p-900">
               <div
                 className="prose-console prose-brief font-sans text-200 leading-[1.85]"
                 dangerouslySetInnerHTML={{ __html: marked.parse(brief, { breaks: true }) as string }}
               />
-            </div>
-            <div className="mt-500 rounded-4 border border-hairline bg-surface px-500 py-400 flex flex-wrap items-center justify-between gap-300">
+            </HUDFrame>
+            <HUDFrame className="mt-500 border border-hairline bg-surface px-500 py-400 flex flex-wrap items-center justify-between gap-300">
               <div className="text-100 font-mono text-ink-tertiary">{t.export_desc}</div>
               <div className="flex items-center gap-200">
                 <button onClick={copyBrief} className="inline-flex items-center gap-200 px-300 h-800 rounded-2 border border-hairline text-100 font-mono uppercase tracking-wider text-ink-secondary hover:bg-surface-2 hover:text-ink-primary transition-colors duration-150 ease-console">
@@ -879,7 +880,7 @@ export default function Home() {
                   <Download className="w-3 h-3" /> {t.download}
                 </button>
               </div>
-            </div>
+            </HUDFrame>
           </section>
         )}
 
@@ -911,21 +912,106 @@ function hasAnyContent(agents: Record<AgentName, AgentState>): boolean {
 
 /* ─────── components ─────── */
 
-// Editorial section header — Vercel/Linear pattern:
-// numbered counter (01 / 06), full-width hairline rule, then label + desc.
+// FUI section header — Territory Studio code-identifier pattern:
+// [OBJ-001] STRATEGY INPUT  ── …
+// Left-aligned code ID, mono caps title, hairline runs to the right, optional right slot.
+const SECTION_CODE: Record<string, string> = {
+  '01': 'OBJ-001',
+  '02': 'OPS-002',
+  '03': 'INTEL-03',
+  '04': 'RECON-04',
+  '05': 'EVAL-05',
+  '06': 'BRIEF-06',
+}
 function SectionRow({ label, title, desc, right }: { label: string; title: string; desc: string; right?: React.ReactNode }) {
+  const code = SECTION_CODE[label] ?? `OBJ-${label}`
   return (
     <div className="mb-500">
-      <div className="flex items-center gap-400 mb-300 text-[10px] font-mono tracking-[0.22em] uppercase">
-        <span className="text-signal-blue tabular-nums">{label} / 06</span>
+      <div className="flex items-center gap-400 mb-300">
+        <span className="fui-code-id text-signal-blue uppercase">[{code}]</span>
+        <h2 className="font-mono text-200 font-semibold uppercase tracking-[0.18em] text-ink-primary">{title}</h2>
         <span className="flex-1 border-t border-hairline" />
         {right}
       </div>
-      <div className="flex items-baseline gap-400 flex-wrap">
-        <h2 className="font-mono text-300 font-semibold uppercase tracking-[0.12em] text-ink-primary">{title}</h2>
-        {desc && <p className="text-100 font-mono text-ink-tertiary">{desc}</p>}
-      </div>
+      {desc && <p className="text-100 font-mono text-ink-tertiary ml-[68px]">{desc}</p>}
     </div>
+  )
+}
+
+// HUDFrame — wraps a panel with four corner brackets (FUI signature).
+// Pass isActive when the panel is "hot" (running, focused) to light the corners blue.
+function HUDFrame({ children, isActive = false, className = '' }: { children: React.ReactNode; isActive?: boolean; className?: string }) {
+  return (
+    <div className={`hud-frame ${isActive ? 'is-active' : ''} ${className}`}>
+      <span className="hud-corner-tr" aria-hidden />
+      <span className="hud-corner-bl" aria-hidden />
+      {children}
+    </div>
+  )
+}
+
+// HUDSourceGrid — replaces the vertical PipelinePanel in the hero.
+// 9-cell grid (3×3) showing every trend source's current state. Each cell:
+//  · top-left tiny brand glyph
+//  · uppercase mono label
+//  · state dot (idle gray / enabled blue / hit green)
+// Click cell → toggle enabled state. Right-arrow icon opens platform.
+function HUDSourceGrid({ enabled, results, lang, runningState }: {
+  enabled: Record<TrendSource, boolean>
+  results: TrendResult[]
+  lang: Lang
+  runningState: 'idle' | 'running' | 'done'
+}) {
+  const labels = lang === 'zh' ? TREND_SOURCE_LABEL_ZH : TREND_SOURCE_LABEL_EN
+  const codes: Record<TrendSource, string> = {
+    'google-trends': 'G-TRD',
+    'steam': 'STM',
+    'twitch': 'TWCH',
+    'reddit': 'RDDT',
+    'youtube': 'YTB',
+    'appstore': 'iOS',
+    'huya': 'HUYA',
+    'douyu': 'DOY',
+    'bilibili': 'B-LI',
+  }
+  return (
+    <HUDFrame isActive={runningState === 'running'} className="bg-surface">
+      <div className="px-400 py-300 border-b border-hairline flex items-center gap-300">
+        <span className="fui-code-id text-signal-blue uppercase">[RECON-04]</span>
+        <span className="text-100 font-mono text-ink-tertiary uppercase tracking-[0.18em]">trend sources</span>
+        <span className="flex-1" />
+        <span className="text-100 font-mono text-ink-tertiary tabular-nums">{Object.values(enabled).filter(Boolean).length}/9 ARM</span>
+      </div>
+      <div className="grid grid-cols-3">
+        {ALL_SOURCES.map((s, i) => {
+          const on = enabled[s]
+          const result = results.find(r => r.source === s)
+          const state: 'idle' | 'armed' | 'hit' | 'failed' =
+            result?.ok ? 'hit' : result && !result.ok ? 'failed' : on ? 'armed' : 'idle'
+          const stateColor =
+            state === 'hit' ? 'bg-signal-green' :
+            state === 'failed' ? 'bg-signal-amber animate-pulseDot' :
+            state === 'armed' ? 'bg-signal-blue' :
+            'bg-ink-tertiary/40'
+          const labelColor = on ? 'text-ink-secondary' : 'text-ink-tertiary'
+          const isRightCol = i % 3 === 2
+          const isBottomRow = i >= 6
+          return (
+            <div
+              key={s}
+              className={`relative px-300 py-300 flex flex-col gap-200 ${isRightCol ? '' : 'border-r border-hairline'} ${isBottomRow ? '' : 'border-b border-hairline'}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={on ? 'text-signal-blue' : 'text-ink-tertiary/60'}>{TREND_ICON[s]}</span>
+                <span className={`w-[6px] h-[6px] rounded-full ${stateColor}`} aria-hidden />
+              </div>
+              <div className={`text-100 font-mono font-semibold uppercase tracking-[0.06em] truncate ${labelColor}`}>{labels[s]}</div>
+              <div className="text-[9px] font-mono text-ink-tertiary tabular-nums tracking-[0.1em]">{codes[s]}</div>
+            </div>
+          )
+        })}
+      </div>
+    </HUDFrame>
   )
 }
 
@@ -985,7 +1071,8 @@ function AgentRow({
   const [open, setOpen] = useState(false)
   const dur = formatDuration(state.startedAt, state.finishedAt)
   return (
-    <article className={`${isLast ? '' : 'border-b border-hairline'}`}>
+    <article className={`relative ${isLast ? '' : 'border-b border-hairline'}`}>
+      {state.status === 'running' && <span className="agent-scanbar" aria-hidden />}
       <button onClick={() => setOpen(o => !o)} className="w-full text-left px-500 py-400 flex items-start gap-400 hover:bg-surface-2 transition-colors duration-150 ease-console">
         <span className="font-mono text-100 text-ink-tertiary tabular-nums shrink-0 pt-100 w-700">
           {String(index).padStart(2, '0')}

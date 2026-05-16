@@ -47,24 +47,8 @@
       "relevant": [{ "source": "china-version-policy.md", "heading": "平台分发抽成" }]
     },
     {
-      "q": "天美工作室都有哪些产品",
-      "relevant": [{ "source": "timi-context.md", "heading": "核心产品矩阵" }]
-    },
-    {
-      "q": "天美 J 工作室是什么意思",
-      "relevant": [{ "source": "timi-context.md", "heading": "组织结构" }]
-    },
-    {
-      "q": "王者荣耀世界什么时候上线",
-      "relevant": [
-        { "source": "timi-context.md", "heading": "核心产品矩阵" },
-        { "source": "timi-context.md", "heading": "战略关切点（推断）" }
-      ]
-    },
-    {
       "q": "Arena of Valor 在东南亚的份额怎么样",
       "relevant": [
-        { "source": "timi-context.md", "heading": "战略关切点（推断）" },
         { "source": "moba-category.md", "heading": "头部产品对比" }
       ]
     },

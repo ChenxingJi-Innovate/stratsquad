@@ -1,6 +1,6 @@
 # StratSquad
 
-> Multi-agent game-industry strategy copilot. Orchestrator + 4 parallel sub-agents + judge + composer, powered by DeepSeek V4. Built for the Tencent TiMi *AI 策略工程师* JD.
+> Multi-agent game-industry strategy research console. Orchestrator + 4 parallel sub-agents + judge + composer, powered by DeepSeek V4. Built for game-market strategy work: window evaluation, competitor scan, monetization read, policy risk.
 
 See parent workspace `../CLAUDE.md` for shared context, glossary, and house style (no em dashes, etc.).
 
@@ -144,7 +144,7 @@ Key registration:
 - Hybrid retrieval (BM25 + dense reranker) for technical queries.
 - MCP server wrapper: expose `/api/run` as an MCP tool, drop into Claude Desktop / Cursor.
 - Tool-calling sub-agents: give competitor agent a Sensor Tower / GameLook scraper tool.
-- SFT export: rate each composed brief, ship JSONL for fine-tuning a "TiMi-style" strategy writer.
+- SFT export: rate each composed brief, ship JSONL for fine-tuning a domain strategy writer.
 - Eval harness for the LLM (not just the retriever): ~30 strategy questions, head-to-head DeepSeek V4 / V4-Flash / Reasoner / GPT-4o-mini.
 
 ## Anti-patterns to avoid
