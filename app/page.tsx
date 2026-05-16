@@ -19,15 +19,26 @@ import {
 
 const ALL_SOURCES: TrendSource[] = ['google-trends', 'steam', 'twitch', 'reddit', 'youtube', 'appstore', 'huya', 'douyu', 'bilibili']
 
+// Public data dashboard URL that mirrors what each API endpoint actually queries.
+// Verified 2026-05-16 — kept in sync with the underlying fetch URLs in lib/trends/*.
 const PLATFORM_URL: Record<TrendSource, string> = {
-  'google-trends': 'https://trends.google.com/trends/',
-  'steam':         'https://store.steampowered.com/',
-  'twitch':        'https://www.twitch.tv/directory/category/just-chatting',
-  'reddit':        'https://www.reddit.com/r/gaming/',
-  'youtube':       'https://www.youtube.com/gaming',
-  'appstore':      'https://apps.apple.com/genre/ios-games/id6014',
+  // Explore is the public mirror of /trends/api/explore + widgetdata/multiline.
+  'google-trends': 'https://trends.google.com/trends/explore',
+  // Official Steam Charts: most played + top selling, same data as ISteamChartsService/GetMostPlayedGames.
+  'steam':         'https://store.steampowered.com/charts/',
+  // Directory shows all categories sorted by current viewers, what helix/games/top returns.
+  'twitch':        'https://www.twitch.tv/directory/',
+  // Mirrors /r/{sub}/search?t=month — top posts of the past 30 days in r/gaming.
+  'reddit':        'https://www.reddit.com/r/gaming/top/?t=month',
+  // YouTube's Gaming Trending tab; same content surface as videoCategoryId=20 order=viewCount.
+  'youtube':       'https://www.youtube.com/gaming/trending',
+  // iPhone top charts (free / paid / grossing for Games), iTunes RSS endpoint we hit.
+  'appstore':      'https://apps.apple.com/us/charts/iphone',
+  // Game directory listing all categories with current viewer/heat counts.
   'huya':          'https://www.huya.com/g',
+  // All categories, what getRanklistByCateId aggregates.
   'douyu':         'https://www.douyu.com/directory/all',
+  // 热门视频 page; mirrors api.bilibili.com/x/web-interface/popular.
   'bilibili':      'https://www.bilibili.com/v/popular/all/',
 }
 
