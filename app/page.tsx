@@ -85,10 +85,13 @@ const AGENT_ICON: Record<AgentName, React.ReactNode> = {
 type Dict = {
   brand_subtitle: string
   runtime_ready: string
+  eyebrow_issue: string
+  eyebrow_status: string
   hero_pre: string
-  hero_italic: string
+  hero_emphasis: string
   hero_post: string
   hero_desc: string
+  spec_strip: string[]
   pipeline_label: string
   pipeline_lines: string[]
   pipeline_nodes: { agents: AgentName[] | AgentName; label: string }[]
@@ -152,10 +155,13 @@ const i18n: Record<Lang, Dict> = {
   zh: {
     brand_subtitle: '多智能体推演控制台',
     runtime_ready: 'stratsquad / 运行时就绪',
+    eyebrow_issue: 'ISSUE 02 · STRATEGY CONSOLE · V0.3',
+    eyebrow_status: 'STREAMING',
     hero_pre: '四位 Agent，围绕一个战略问题展开',
-    hero_italic: '推演',
+    hero_emphasis: '推演',
     hero_post: '。',
-    hero_desc: 'DeepSeek V4 编排 · 9 路实时趋势 · BGE-M3 hybrid RAG + reranker · 评委门控 · 全程 SSE。',
+    hero_desc: '编排器拆解 · 4 专家并行 · 9 源实时趋势 · BGE-M3 hybrid RAG + reranker · 评委门控 · 全程 SSE',
+    spec_strip: ['DEEPSEEK V4', '9 LIVE SOURCES', 'BGE-M3 + RERANKER', 'JUDGE-GATED', 'STREAMING'],
     pipeline_label: '流水线',
     pipeline_lines: [
       'orchestrator → 拆解为 4 个子简报',
@@ -229,10 +235,13 @@ const i18n: Record<Lang, Dict> = {
   en: {
     brand_subtitle: 'multi-agent inference console',
     runtime_ready: 'stratsquad / runtime ready',
+    eyebrow_issue: 'ISSUE 02 · STRATEGY CONSOLE · V0.3',
+    eyebrow_status: 'STREAMING',
     hero_pre: 'A squad of agents, ',
-    hero_italic: 'debating',
+    hero_emphasis: 'debating',
     hero_post: ' one strategy question.',
-    hero_desc: 'DeepSeek V4 orchestration · 9-source live trends · BGE-M3 hybrid RAG + reranker · judge-gated · full SSE.',
+    hero_desc: 'Orchestrator decomposes · 4 experts parallel · 9 live trend sources · BGE-M3 hybrid RAG + reranker · judge-gated · full SSE',
+    spec_strip: ['DEEPSEEK V4', '9 LIVE SOURCES', 'BGE-M3 + RERANKER', 'JUDGE-GATED', 'STREAMING'],
     pipeline_label: 'pipeline',
     pipeline_lines: [
       'orchestrator → 4 sub-briefs',
@@ -608,24 +617,30 @@ export default function Home() {
       </header>
 
       <div className="max-w-7xl mx-auto px-500 sm:px-700 py-700">
-        {/* INTRO */}
-        <section className="mb-900 pt-600 relative">
-          <div className="hero-aurora" aria-hidden />
-          <div className="grid lg:grid-cols-[1.6fr_1fr] gap-800 items-end relative">
-            <div className="relative">
-              <div className="flex items-center gap-300 mb-400 text-100 font-mono text-ink-tertiary">
-                <span className="w-200 h-200 rounded-full bg-signal-green animate-pulseDot" />
-                <span className="uppercase tracking-[0.2em]">{t.runtime_ready}</span>
-              </div>
+        {/* HERO — editorial-grade Track 2: eyebrow strip, massive type, spec strip, side pipeline */}
+        <section className="pt-700 pb-1000 relative">
+          <div className="hero-backdrop" aria-hidden />
+
+          {/* Eyebrow strip: issue label + status pulse */}
+          <div className="relative flex items-center justify-between gap-400 mb-700 text-[10px] font-mono tracking-[0.22em] uppercase">
+            <span className="text-ink-tertiary">{t.eyebrow_issue}</span>
+            <span className="flex items-center gap-200 text-signal-green">
+              <span className="w-[6px] h-[6px] rounded-full bg-signal-green animate-pulseDot" />
+              {t.eyebrow_status}
+            </span>
+          </div>
+
+          <div className="relative grid lg:grid-cols-[1.7fr_1fr] gap-900 items-end">
+            <div>
               <h1
-                className="font-semibold text-ink-primary leading-[1.04] mb-500"
-                style={{ fontSize: 'clamp(40px, 6vw, 76px)', letterSpacing: '-0.035em' }}
+                className="font-semibold text-ink-primary leading-[0.98] mb-600"
+                style={{ fontSize: 'clamp(48px, 7.8vw, 96px)', letterSpacing: '-0.045em' }}
               >
                 {t.hero_pre}
-                <span className="hero-italic text-ink-primary">{t.hero_italic}</span>
+                <span className="text-signal-blue">{t.hero_emphasis}</span>
                 <span className="text-signal-blue">{t.hero_post}</span>
               </h1>
-              <p className="text-300 text-ink-secondary leading-relaxed max-w-xl">
+              <p className="text-300 text-ink-secondary leading-relaxed max-w-2xl">
                 {t.hero_desc}
               </p>
             </div>
@@ -636,10 +651,27 @@ export default function Home() {
               running={running}
             />
           </div>
+
+          {/* Spec strip — hairline-separated metadata in mono caps, Vercel/Linear pattern */}
+          <div className="relative mt-1000 border-t border-hairline pt-400 flex flex-wrap items-center gap-x-700 gap-y-200">
+            {t.spec_strip.map((label, i) => (
+              <span
+                key={i}
+                className={`text-[10px] font-mono tracking-[0.22em] uppercase ${
+                  i === t.spec_strip.length - 1 ? 'text-signal-green' : 'text-ink-tertiary'
+                }`}
+              >
+                {i === t.spec_strip.length - 1 && (
+                  <span className="inline-block w-[6px] h-[6px] rounded-full bg-signal-green animate-pulseDot mr-200 align-middle" />
+                )}
+                {label}
+              </span>
+            ))}
+          </div>
         </section>
 
         {/* INPUT */}
-        <section id="input" className="mb-800">
+        <section id="input" className="mb-1200">
           <SectionRow label="01" title={t.sec_input} desc={t.sec_input_desc} />
 
           <div className="rounded-4 border border-hairline bg-surface overflow-hidden">
@@ -695,7 +727,7 @@ export default function Home() {
 
         {/* TIMELINE */}
         {(running || hasAnyContent(agents) || brief) && (
-          <section className="mb-800 animate-fadeIn">
+          <section className="mb-1200 animate-fadeIn">
             <SectionRow
               label="02"
               title={t.sec_timeline}
@@ -736,7 +768,7 @@ export default function Home() {
 
         {/* RAG HITS */}
         {ragHits.length > 0 && (
-          <section className="mb-800 animate-fadeIn">
+          <section className="mb-1200 animate-fadeIn">
             <SectionRow
               label="03"
               title={t.sec_rag}
@@ -756,7 +788,7 @@ export default function Home() {
 
         {/* DATA QUERY (LIVE TREND SOURCES) */}
         {(trendPlan || trendResults.length > 0) && (
-          <section className="mb-800 animate-fadeIn">
+          <section className="mb-1200 animate-fadeIn">
             <SectionRow
               label="04"
               title={t.sec_data}
@@ -800,7 +832,7 @@ export default function Home() {
 
         {/* JUDGE GRID */}
         {scores.length > 0 && (
-          <section className="mb-800 animate-fadeIn">
+          <section className="mb-1200 animate-fadeIn">
             <SectionRow
               label="05"
               title={t.sec_judge}
@@ -829,7 +861,7 @@ export default function Home() {
 
         {/* BRIEF */}
         {brief && (
-          <section className="mb-800 animate-fadeIn">
+          <section className="mb-1200 animate-fadeIn">
             <SectionRow label="06" title={t.sec_brief} desc={t.sec_brief_desc} />
             <div className="rounded-4 border border-hairline bg-surface p-700 sm:p-900">
               <div
@@ -879,15 +911,20 @@ function hasAnyContent(agents: Record<AgentName, AgentState>): boolean {
 
 /* ─────── components ─────── */
 
+// Editorial section header — Vercel/Linear pattern:
+// numbered counter (01 / 06), full-width hairline rule, then label + desc.
 function SectionRow({ label, title, desc, right }: { label: string; title: string; desc: string; right?: React.ReactNode }) {
   return (
-    <div className="mb-500 flex items-baseline justify-between gap-400 flex-wrap">
-      <div className="flex items-baseline gap-400 min-w-0">
-        <span className="font-mono text-100 text-signal-blue tabular-nums">[{label}]</span>
-        <h2 className="font-mono text-200 font-semibold uppercase tracking-[0.18em] text-ink-primary">{title}</h2>
-        <p className="text-100 font-mono text-ink-tertiary truncate">{desc}</p>
+    <div className="mb-500">
+      <div className="flex items-center gap-400 mb-300 text-[10px] font-mono tracking-[0.22em] uppercase">
+        <span className="text-signal-blue tabular-nums">{label} / 06</span>
+        <span className="flex-1 border-t border-hairline" />
+        {right}
       </div>
-      {right}
+      <div className="flex items-baseline gap-400 flex-wrap">
+        <h2 className="font-mono text-300 font-semibold uppercase tracking-[0.12em] text-ink-primary">{title}</h2>
+        {desc && <p className="text-100 font-mono text-ink-tertiary">{desc}</p>}
+      </div>
     </div>
   )
 }
