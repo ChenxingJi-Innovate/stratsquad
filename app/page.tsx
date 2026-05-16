@@ -7,10 +7,26 @@ import {
   Database, Terminal, Play, Square, Activity, Languages,
   Search, Video, Gamepad2, MessageSquare, Smartphone, Tv, Radio, MonitorPlay,
   Check, Ban, Loader,
+  Upload, Link as LinkIcon, Trash2, X,
 } from 'lucide-react'
 import type { AgentName, StreamEvent, Subtask, JudgeScore, SubAgent, FullResult, RagHit, TrendQueryPlan, TrendResult, TrendSource } from '../lib/types'
 import { AGENT_LABEL_ZH, AGENT_LABEL_EN, JUDGE_PASS_THRESHOLD } from '../lib/types'
 import { TREND_SOURCE_LABEL_ZH, TREND_SOURCE_LABEL_EN } from '../lib/trends/types'
+import type { UserChunk } from '../lib/rag/types'
+
+const ALL_SOURCES: TrendSource[] = ['google-trends', 'steam', 'twitch', 'reddit', 'youtube', 'appstore', 'huya', 'douyu', 'bilibili']
+
+type KBDocStatus = 'chunking' | 'embedding' | 'ready' | 'failed'
+type KBDoc = {
+  id: string
+  name: string
+  kind: 'file' | 'url'
+  status: KBDocStatus
+  chunks: UserChunk[]
+  size: number              // chars
+  error?: string
+  addedAt: number
+}
 
 const TREND_ICON: Record<TrendSource, React.ReactNode> = {
   'google-trends': <Search className="w-3.5 h-3.5" strokeWidth={1.5} />,
@@ -53,10 +69,22 @@ type Dict = {
   sec_input: string
   sec_input_desc: string
   q_placeholder: string
-  corpus_toggle: string
-  corpus_placeholder: string
+  platforms_label: string
+  platforms_desc: (n: number) => string
+  platforms_all: string
+  platforms_clear: string
+  kb_label: string
+  kb_desc: string
+  kb_drop: string
+  kb_url_placeholder: string
+  kb_ingest_btn: string
+  kb_remove: string
+  kb_chunks: (n: number) => string
+  kb_status_chunking: string
+  kb_status_embedding: string
+  kb_status_ready: string
+  kb_status_failed: string
   chars: string
-  load_sample: string
   btn_run: string
   btn_abort: string
   sec_timeline: string
@@ -90,8 +118,6 @@ type Dict = {
   detail_streaming: string
   detail_reason: string
   retried: string
-  sample_q: string
-  sample_corpus: string
   footer_subtitle: string
   footer_credit: string
 }
@@ -120,12 +146,24 @@ const i18n: Record<Lang, Dict> = {
       { agents: 'composer', label: 'composer · 终稿战略简报' },
     ],
     sec_input: '战略问题',
-    sec_input_desc: '原样写问题。可选附行业语料 / 数据片段。',
+    sec_input_desc: '原样写问题。下方选择数据源 + 连接自己的知识库。',
     q_placeholder: '例：评估 2026 下半年发布一款 MOBA 手游进入东南亚市场的窗口期...',
-    corpus_toggle: 'CORPUS · 行业报告 / 数据片段（可选）',
-    corpus_placeholder: '粘贴 Niko Partners / 伽马数据 / Sensor Tower 报告片段。',
+    platforms_label: '数据源',
+    platforms_desc: n => `${n}/9 启用 · 关闭的源不会被 planner 调度`,
+    platforms_all: '全选',
+    platforms_clear: '全清',
+    kb_label: '你的知识库',
+    kb_desc: '拖入文件或粘贴 URL。后端 chunk + embed (BGE-M3) + 加入 RAG 检索 + reranker 精排。',
+    kb_drop: '拖入 .md / .txt / .csv / .json 文件，或点击选择',
+    kb_url_placeholder: '或粘贴一个 URL (会抓取页面文本)',
+    kb_ingest_btn: '拉取并入库',
+    kb_remove: '移除',
+    kb_chunks: n => `${n} chunk`,
+    kb_status_chunking: 'CHUNKING',
+    kb_status_embedding: 'EMBEDDING',
+    kb_status_ready: 'READY',
+    kb_status_failed: 'FAILED',
     chars: '字',
-    load_sample: '[载入示例]',
     btn_run: '启动 squad',
     btn_abort: '中止',
     sec_timeline: 'AGENT 时间线',
@@ -159,17 +197,7 @@ const i18n: Record<Lang, Dict> = {
     detail_streaming: '· 流式中',
     detail_reason: '评委评语',
     retried: '已重生',
-    sample_q: '评估 2026 下半年发布一款 MOBA 手游进入东南亚市场（重点印尼 / 越南 / 菲律宾）的窗口期、竞品壁垒、商业化路径与主要政策风险，并给出 90 天落地动作清单。',
-    sample_corpus: `据 Niko Partners 2025 年度东南亚游戏市场报告，东南亚移动游戏市场规模预计 2026 年达到 76 亿美元，年增长 8.3%。印尼贡献约 35% 份额，越南 22%，菲律宾 14%。
-
-MOBA 品类在东南亚仍是大盘第一，Mobile Legends: Bang Bang 月活约 1.1 亿，Arena of Valor 月活 5500 万。两者合计市占超过 80%。
-
-Sensor Tower 数据显示，2025 Q3 东南亚 MOBA 品类 ARPU 约 4.2 美元，付费率 6.8%，皮肤为主要付费点（占流水 65%）。
-
-电竞生态：MPL Indonesia / Vietnam / Philippines 是 Moonton 旗下赛事，年度奖金 50 万美元级，构成强护城河。
-
-技术趋势：UE5 mobile pipeline、AI 智能匹配、跨端云游戏在 2025 年开始在 MOBA 品类小规模试水。`,
-    footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3',
+    footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3 · bge-reranker',
     footer_credit: 'track 2 · industrial console · vercel geist + ibm carbon',
   },
   en: {
@@ -195,12 +223,24 @@ Sensor Tower 数据显示，2025 Q3 东南亚 MOBA 品类 ARPU 约 4.2 美元，
       { agents: 'composer', label: 'composer · final brief' },
     ],
     sec_input: 'STRATEGY QUESTION',
-    sec_input_desc: 'Write the question verbatim. Optional corpus snippets for RAG context.',
+    sec_input_desc: 'Write the question verbatim. Pick data sources + connect your own knowledge base below.',
     q_placeholder: 'e.g. Evaluate the window for launching a MOBA in SEA in H2 2026...',
-    corpus_toggle: 'CORPUS · industry reports / data snippets (optional)',
-    corpus_placeholder: 'Paste Niko Partners / Sensor Tower / GameLook report snippets.',
+    platforms_label: 'data sources',
+    platforms_desc: n => `${n}/9 enabled · disabled sources are not dispatched by the planner`,
+    platforms_all: 'all',
+    platforms_clear: 'none',
+    kb_label: 'your knowledge base',
+    kb_desc: 'Drop files or paste URL. Server-side chunk + embed (BGE-M3) + RAG retrieval + BGE-reranker.',
+    kb_drop: 'drop .md / .txt / .csv / .json here, or click to browse',
+    kb_url_placeholder: 'or paste a URL (page text will be fetched)',
+    kb_ingest_btn: 'ingest',
+    kb_remove: 'remove',
+    kb_chunks: n => `${n} chunks`,
+    kb_status_chunking: 'CHUNKING',
+    kb_status_embedding: 'EMBEDDING',
+    kb_status_ready: 'READY',
+    kb_status_failed: 'FAILED',
     chars: 'chars',
-    load_sample: '[load sample]',
     btn_run: 'run squad',
     btn_abort: 'abort',
     sec_timeline: 'AGENT TIMELINE',
@@ -234,17 +274,7 @@ Sensor Tower 数据显示，2025 Q3 东南亚 MOBA 品类 ARPU 约 4.2 美元，
     detail_streaming: '· streaming',
     detail_reason: 'JUDGE REASON',
     retried: 'retried',
-    sample_q: 'Evaluate the 2026 H2 launch window for a new MOBA mobile title entering Southeast Asia (focus Indonesia / Vietnam / Philippines): competitive moat, monetization path, and major policy risks. Include a 90-day execution checklist.',
-    sample_corpus: `Per Niko Partners 2025 Annual SEA Games Report, SEA mobile game market is projected at USD 7.6B in 2026, growing 8.3% YoY. Indonesia accounts for ~35%, Vietnam 22%, Philippines 14%.
-
-MOBA remains the #1 category in SEA. Mobile Legends: Bang Bang ~110M MAU, Arena of Valor ~55M MAU. Combined market share > 80%.
-
-Sensor Tower 2025 Q3: SEA MOBA ARPU ~USD 4.2, payer rate 6.8%, skins drive 65% of revenue.
-
-Esports moat: MPL Indonesia / Vietnam / Philippines are Moonton-owned circuits with USD 500K+ annual prize pools.
-
-Tech trends: UE5 mobile pipeline, AI matchmaking, cross-platform cloud gaming entered small-scale MOBA pilots in 2025.`,
-    footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3',
+    footer_subtitle: 'multi-agent strategy copilot · deepseek v4 · bge-m3 · bge-reranker',
     footer_credit: 'track 2 · industrial console · vercel geist + ibm carbon',
   },
 }
@@ -252,8 +282,11 @@ Tech trends: UE5 mobile pipeline, AI matchmaking, cross-platform cloud gaming en
 export default function Home() {
   const [lang, setLang] = useState<Lang>('zh')
   const [question, setQuestion] = useState('')
-  const [corpus, setCorpus] = useState('')
-  const [showCorpus, setShowCorpus] = useState(false)
+  const [enabledSources, setEnabledSources] = useState<Record<TrendSource, boolean>>(
+    Object.fromEntries(ALL_SOURCES.map(s => [s, true])) as Record<TrendSource, boolean>,
+  )
+  const [kbDocs, setKbDocs] = useState<KBDoc[]>([])
+  const [kbUrl, setKbUrl] = useState('')
   const [running, setRunning] = useState(false)
   const [error, setError] = useState('')
   const [agents, setAgents] = useState<Record<AgentName, AgentState>>(initAgents())
@@ -307,11 +340,14 @@ export default function Home() {
     const ctrl = new AbortController()
     abortRef.current = ctrl
 
+    const userChunks: UserChunk[] = kbDocs.flatMap(d => d.status === 'ready' ? d.chunks : [])
+    const enabled = ALL_SOURCES.filter(s => enabledSources[s])
+
     try {
       const res = await fetch('/api/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, corpus }),
+        body: JSON.stringify({ question, enabledSources: enabled, userChunks }),
         signal: ctrl.signal,
       })
       if (!res.ok || !res.body) throw new Error(await res.text() || 'request failed')
@@ -348,6 +384,82 @@ export default function Home() {
   function abort() {
     abortRef.current?.abort()
     setRunning(false)
+  }
+
+  function toggleSource(s: TrendSource) {
+    setEnabledSources(prev => ({ ...prev, [s]: !prev[s] }))
+  }
+
+  function removeKbDoc(id: string) {
+    setKbDocs(prev => prev.filter(d => d.id !== id))
+  }
+
+  // Common ingest flow: POST text or URL to /api/kb/ingest, parse SSE stream, update KBDoc by id.
+  async function streamIngest(docId: string, body: object) {
+    try {
+      const res = await fetch('/api/kb/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok || !res.body) throw new Error(await res.text() || `HTTP ${res.status}`)
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n\n')
+        buf = lines.pop() ?? ''
+        for (const block of lines) {
+          const trimmed = block.trim()
+          if (!trimmed.startsWith('data:')) continue
+          const payload = trimmed.slice(5).trim()
+          if (!payload) continue
+          try {
+            const ev = JSON.parse(payload)
+            handleKbEvent(docId, ev)
+          } catch { /* malformed line */ }
+        }
+      }
+    } catch (e: any) {
+      setKbDocs(prev => prev.map(d => d.id === docId ? { ...d, status: 'failed', error: e?.message ?? 'ingest failed' } : d))
+    }
+  }
+
+  function handleKbEvent(docId: string, ev: any) {
+    setKbDocs(prev => prev.map(d => {
+      if (d.id !== docId) return d
+      if (ev.type === 'chunking') return { ...d, status: 'chunking', size: ev.size ?? d.size }
+      if (ev.type === 'embedding') return { ...d, status: 'embedding' }
+      if (ev.type === 'ready')    return { ...d, status: 'ready', chunks: ev.chunks ?? [] }
+      if (ev.type === 'error')    return { ...d, status: 'failed', error: ev.message }
+      return d
+    }))
+  }
+
+  async function ingestFiles(files: FileList | File[]) {
+    const arr = Array.from(files)
+    for (const f of arr) {
+      const text = await f.text()
+      const id = crypto.randomUUID()
+      const doc: KBDoc = { id, name: f.name, kind: 'file', status: 'chunking', chunks: [], size: text.length, addedAt: Date.now() }
+      setKbDocs(prev => [...prev, doc])
+      streamIngest(id, { name: f.name, text })
+    }
+  }
+
+  async function ingestUrl(url: string) {
+    if (!url.trim()) return
+    let host = url
+    try { host = new URL(url).hostname } catch { /* keep as-is */ }
+    const id = crypto.randomUUID()
+    const doc: KBDoc = { id, name: host, kind: 'url', status: 'chunking', chunks: [], size: 0, addedAt: Date.now() }
+    setKbDocs(prev => [...prev, doc])
+    setKbUrl('')
+    streamIngest(id, { name: host, url })
   }
 
   function handleEvent(ev: StreamEvent) {
@@ -512,36 +624,28 @@ export default function Home() {
               onChange={e => setQuestion(e.target.value)}
             />
 
-            <button
-              onClick={() => setShowCorpus(v => !v)}
-              className="w-full px-500 py-300 flex items-center justify-between text-100 font-mono uppercase tracking-[0.15em] text-ink-secondary border-t border-hairline hover:bg-surface-2 transition-colors duration-150 ease-console"
-            >
-              <span className="flex items-center gap-200">
-                <FileText className="w-3 h-3" />
-                {t.corpus_toggle}
-              </span>
-              <ChevronDown className={`w-3 h-3 transition-transform duration-150 ease-console ${showCorpus ? 'rotate-180' : ''}`} />
-            </button>
-            {showCorpus && (
-              <textarea
-                className="w-full h-32 px-500 pb-400 text-100 font-mono bg-transparent resize-y outline-none placeholder:text-ink-tertiary leading-relaxed border-t border-hairline"
-                placeholder={t.corpus_placeholder}
-                value={corpus}
-                onChange={e => setCorpus(e.target.value)}
-              />
-            )}
+            <PlatformPicker
+              enabled={enabledSources}
+              onToggle={toggleSource}
+              onSelectAll={() => setEnabledSources(Object.fromEntries(ALL_SOURCES.map(s => [s, true])) as Record<TrendSource, boolean>)}
+              onClear={() => setEnabledSources(Object.fromEntries(ALL_SOURCES.map(s => [s, false])) as Record<TrendSource, boolean>)}
+              lang={lang}
+              t={t}
+            />
+
+            <KBConnectPanel
+              docs={kbDocs}
+              urlInput={kbUrl}
+              onUrlChange={setKbUrl}
+              onFiles={ingestFiles}
+              onUrlIngest={ingestUrl}
+              onRemove={removeKbDoc}
+              t={t}
+            />
 
             <div className="flex flex-wrap items-center justify-between gap-300 px-500 py-300 border-t border-hairline bg-surface-2/50">
               <div className="flex items-center gap-400 text-100 font-mono text-ink-tertiary">
                 <span><span className="text-ink-secondary tabular-nums">{question.length}</span> {t.chars}</span>
-                {!question && (
-                  <button
-                    onClick={() => { setQuestion(t.sample_q); setCorpus(t.sample_corpus); setShowCorpus(true) }}
-                    className="inline-flex items-center gap-100 text-signal-blue hover:text-signal-blue-bright transition-colors duration-150 ease-console"
-                  >
-                    {t.load_sample}
-                  </button>
-                )}
               </div>
               {running ? (
                 <button
@@ -1099,6 +1203,165 @@ function fmtNumDisplay(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
   return String(n)
+}
+
+// Platform picker: 9 source chips, toggleable. Default all on. Disabled sources are filtered
+// out of the trend planner's pick list server-side.
+function PlatformPicker({
+  enabled, onToggle, onSelectAll, onClear, lang, t,
+}: {
+  enabled: Record<TrendSource, boolean>
+  onToggle: (s: TrendSource) => void
+  onSelectAll: () => void
+  onClear: () => void
+  lang: Lang
+  t: Dict
+}) {
+  const labels = lang === 'zh' ? TREND_SOURCE_LABEL_ZH : TREND_SOURCE_LABEL_EN
+  const enabledCount = ALL_SOURCES.filter(s => enabled[s]).length
+  return (
+    <div className="border-t border-hairline px-500 py-400">
+      <div className="flex items-center justify-between mb-300">
+        <div className="flex items-center gap-300">
+          <span className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary">{t.platforms_label}</span>
+          <span className="text-100 font-mono text-ink-tertiary tabular-nums">{t.platforms_desc(enabledCount)}</span>
+        </div>
+        <div className="flex items-center gap-200 text-100 font-mono">
+          <button onClick={onSelectAll} className="text-signal-blue hover:text-signal-blue-bright">{t.platforms_all}</button>
+          <span className="text-ink-tertiary">·</span>
+          <button onClick={onClear} className="text-ink-tertiary hover:text-signal-amber">{t.platforms_clear}</button>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-200">
+        {ALL_SOURCES.map(s => {
+          const on = enabled[s]
+          return (
+            <button
+              key={s}
+              onClick={() => onToggle(s)}
+              className={`inline-flex items-center gap-200 h-700 px-300 rounded-2 border text-100 font-mono transition-colors duration-150 ease-console ${
+                on
+                  ? 'border-signal-blue/60 bg-signal-blue-soft/60 text-signal-blue-bright'
+                  : 'border-hairline text-ink-tertiary hover:border-hairline-strong hover:text-ink-secondary'
+              }`}
+            >
+              <span className={on ? 'text-signal-blue' : 'text-ink-tertiary'}>{TREND_ICON[s]}</span>
+              <span>{labels[s]}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// KB connect panel: drag-drop file upload + URL ingest + uploaded doc list.
+function KBConnectPanel({
+  docs, urlInput, onUrlChange, onFiles, onUrlIngest, onRemove, t,
+}: {
+  docs: KBDoc[]
+  urlInput: string
+  onUrlChange: (v: string) => void
+  onFiles: (files: FileList | File[]) => void
+  onUrlIngest: (url: string) => void
+  onRemove: (id: string) => void
+  t: Dict
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = useState(false)
+
+  return (
+    <div className="border-t border-hairline px-500 py-400">
+      <div className="flex items-center gap-300 mb-300">
+        <span className="text-100 font-mono uppercase tracking-[0.15em] text-ink-tertiary">{t.kb_label}</span>
+        <span className="text-100 font-mono text-ink-tertiary">{t.kb_desc}</span>
+      </div>
+
+      {/* Drop zone */}
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => {
+          e.preventDefault()
+          setDragOver(false)
+          if (e.dataTransfer.files.length > 0) onFiles(e.dataTransfer.files)
+        }}
+        className={`rounded-2 border border-dashed px-400 py-500 text-center cursor-pointer transition-colors duration-150 ease-console ${
+          dragOver ? 'border-signal-blue bg-signal-blue-soft/40' : 'border-hairline-strong hover:border-signal-blue/50 bg-surface-2/30'
+        }`}
+      >
+        <Upload className="inline w-4 h-4 mb-200 text-ink-tertiary" strokeWidth={1.5} />
+        <div className="text-100 font-mono text-ink-tertiary">{t.kb_drop}</div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".md,.txt,.csv,.json,.markdown"
+          multiple
+          className="hidden"
+          onChange={e => {
+            if (e.target.files && e.target.files.length > 0) onFiles(e.target.files)
+            e.target.value = ''
+          }}
+        />
+      </div>
+
+      {/* URL input */}
+      <div className="mt-300 flex items-center gap-200">
+        <div className="flex-1 flex items-center gap-200 px-300 h-800 rounded-2 border border-hairline bg-surface-2/30 focus-within:border-signal-blue/50">
+          <LinkIcon className="w-3 h-3 text-ink-tertiary shrink-0" />
+          <input
+            value={urlInput}
+            onChange={e => onUrlChange(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') onUrlIngest(urlInput) }}
+            placeholder={t.kb_url_placeholder}
+            className="flex-1 bg-transparent outline-none text-100 font-mono text-ink-primary placeholder:text-ink-tertiary"
+          />
+        </div>
+        <button
+          onClick={() => onUrlIngest(urlInput)}
+          disabled={!urlInput.trim()}
+          className="inline-flex items-center gap-200 px-400 h-800 rounded-2 bg-signal-blue text-white text-100 font-mono font-semibold uppercase tracking-wider hover:bg-signal-blue-bright transition-colors duration-150 ease-console disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {t.kb_ingest_btn}
+        </button>
+      </div>
+
+      {/* Uploaded docs */}
+      {docs.length > 0 && (
+        <div className="mt-400 space-y-200">
+          {docs.map(d => <KBDocRow key={d.id} doc={d} onRemove={onRemove} t={t} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function KBDocRow({ doc, onRemove, t }: { doc: KBDoc; onRemove: (id: string) => void; t: Dict }) {
+  const statusBadge = (() => {
+    if (doc.status === 'chunking') return { label: t.kb_status_chunking, color: 'text-signal-blue', icon: <Loader className="w-3 h-3 animate-spin" /> }
+    if (doc.status === 'embedding') return { label: t.kb_status_embedding, color: 'text-signal-blue', icon: <Loader className="w-3 h-3 animate-spin" /> }
+    if (doc.status === 'ready')    return { label: t.kb_status_ready,    color: 'text-signal-green', icon: <Check className="w-3 h-3" /> }
+    return { label: t.kb_status_failed, color: 'text-signal-amber', icon: <Ban className="w-3 h-3" /> }
+  })()
+  return (
+    <div className="flex items-center justify-between gap-300 px-300 h-800 rounded-2 border border-hairline bg-surface-2/40">
+      <div className="flex items-center gap-300 min-w-0 flex-1">
+        <span className={`shrink-0 ${statusBadge.color}`}>{statusBadge.icon}</span>
+        <span className="text-100 font-mono text-ink-primary truncate">{doc.name}</span>
+        <span className="shrink-0 text-100 font-mono text-ink-tertiary">{t.kb_chunks(doc.chunks.length)}</span>
+        <span className={`shrink-0 text-100 font-mono font-semibold tracking-wider ${statusBadge.color}`}>{statusBadge.label}</span>
+        {doc.error && <span className="text-100 font-mono text-signal-amber truncate">{doc.error}</span>}
+      </div>
+      <button
+        onClick={() => onRemove(doc.id)}
+        aria-label={t.kb_remove}
+        className="shrink-0 text-ink-tertiary hover:text-signal-amber transition-colors duration-150"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  )
 }
 
 // Rolling number: re-mounts each digit on value change to trigger the rollUp animation.
