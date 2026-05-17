@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { marked } from 'marked'
 import BriefRenderer from './BriefRenderer'
+import QAMode from './QAMode'
 import {
   AlertCircle, Brain, Target, TrendingUp,
   Globe, ShieldAlert, Scale, FileText, RotateCw, Download, Copy, ChevronDown,
@@ -173,10 +174,10 @@ const i18n: Record<Lang, Dict> = {
     eyebrow_issue: '',
     eyebrow_status: '实时',
     hero_kicker: '',
-    hero_pre: '为游戏战略决策',
-    hero_emphasis: '做研究',
-    hero_post: '。',
-    hero_desc: '整合九路公开数据与你的私有语料，产出可审查、可引用的研究简报。',
+    hero_pre: '游戏市场趋势分析',
+    hero_emphasis: '策略小队',
+    hero_post: '',
+    hero_desc: '整合八路公开数据与你的私有语料，产出可审查、可引用的研究简报。',
     hero_cta: '开始研究',
     spec_strip: ['实时趋势采集', '混合向量检索', '自动评审门控', '可审查链路'],
     pipeline_label: '流水线',
@@ -255,10 +256,10 @@ const i18n: Record<Lang, Dict> = {
     eyebrow_issue: '',
     eyebrow_status: 'LIVE',
     hero_kicker: '',
-    hero_pre: 'Research for ',
-    hero_emphasis: 'every strategic call',
-    hero_post: ' you ship.',
-    hero_desc: 'Nine live data sources and your private corpus, fused into a citable, auditable research memo.',
+    hero_pre: 'Game-market intelligence ',
+    hero_emphasis: 'squad',
+    hero_post: '',
+    hero_desc: 'Eight live data sources and your private corpus, fused into a citable, auditable research memo.',
     hero_cta: 'Start research',
     spec_strip: ['Live trend ingest', 'Hybrid retrieval', 'Auto judge', 'Auditable chain'],
     pipeline_label: 'pipeline',
@@ -335,6 +336,7 @@ const i18n: Record<Lang, Dict> = {
 
 export default function Home() {
   const [lang, setLang] = useState<Lang>('zh')
+  const [mode, setMode] = useState<'strategy' | 'qa'>('strategy')
   const [question, setQuestion] = useState('')
   const [enabledSources, setEnabledSources] = useState<Record<TrendSource, boolean>>(
     Object.fromEntries(ALL_SOURCES.map(s => [s, true])) as Record<TrendSource, boolean>,
@@ -534,6 +536,44 @@ export default function Home() {
     setKbDocs(prev => [...prev, doc])
   }
 
+  // Convert the just-completed trend bundle into a RAG doc.
+  // Server chunks + embeds the digests and returns UserChunk[].
+  async function archiveTrendsAsKB() {
+    if (!trendPlan || trendResults.length === 0) return
+    const ts = new Date()
+    const label = `趋势归档 · ${ts.toLocaleDateString('zh-CN')} ${ts.getHours()}:${String(ts.getMinutes()).padStart(2, '0')}`
+    const id = crypto.randomUUID()
+    const doc: KBDoc = { id, name: label, kind: 'file', status: 'chunking', chunks: [], size: 0, addedAt: Date.now() }
+    setKbDocs(prev => [...prev, doc])
+    try {
+      const res = await fetch('/api/kb/archive-trends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label, bundle: { plan: trendPlan, results: trendResults } }),
+      })
+      if (!res.ok || !res.body) throw new Error(await res.text() || `HTTP ${res.status}`)
+      const reader = res.body.getReader()
+      const dec = new TextDecoder()
+      let buf = ''
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buf += dec.decode(value, { stream: true })
+        const lines = buf.split('\n\n')
+        buf = lines.pop() ?? ''
+        for (const block of lines) {
+          const trimmed = block.trim()
+          if (!trimmed.startsWith('data:')) continue
+          const payload = trimmed.slice(5).trim()
+          if (!payload) continue
+          try { handleKbEvent(id, JSON.parse(payload)) } catch {}
+        }
+      }
+    } catch (e: any) {
+      setKbDocs(prev => prev.map(d => d.id === id ? { ...d, status: 'failed', error: e?.message ?? 'archive failed' } : d))
+    }
+  }
+
   // Fetch the preset manifest once on mount.
   useEffect(() => {
     fetch('/api/kb/presets')
@@ -644,8 +684,24 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-400 text-100 font-mono text-ink-tertiary">
-            <div className="hidden md:flex items-center gap-400">
-              <MetaBadge label="status" value="LIVE" tone="green" />
+            {/* Mode toggle — strategy pipeline vs Q&A (single agent + tools) */}
+            <div className="hidden md:inline-flex rounded-2 border border-hairline overflow-hidden">
+              <button
+                onClick={() => setMode('strategy')}
+                className={`px-300 h-700 text-100 font-mono uppercase tracking-wider transition-colors duration-150 ease-console ${
+                  mode === 'strategy' ? 'bg-coral text-on-coral' : 'text-ink-secondary hover:bg-surface-card'
+                }`}
+              >
+                {lang === 'zh' ? '战略推演' : 'Strategy'}
+              </button>
+              <button
+                onClick={() => setMode('qa')}
+                className={`px-300 h-700 text-100 font-mono uppercase tracking-wider transition-colors duration-150 ease-console border-l border-hairline ${
+                  mode === 'qa' ? 'bg-coral text-on-coral' : 'text-ink-secondary hover:bg-surface-card'
+                }`}
+              >
+                {lang === 'zh' ? '问答' : 'Q&A'}
+              </button>
             </div>
             <button
               onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
@@ -671,10 +727,10 @@ export default function Home() {
                 <span>{t.eyebrow_status}</span>
               </div>
 
-              {/* Headline — Anthropic editorial serif (Copernicus / Tiempos fallback chain) */}
+              {/* Headline — Anthropic editorial serif. Sized to fit a single line at lg+ */}
               <h1
-                className="font-serif text-ink-primary leading-[1.05] mb-600 tracking-[-0.025em]"
-                style={{ fontSize: 'clamp(44px, 6.5vw, 96px)', fontWeight: 400 }}
+                className="font-serif text-ink-primary leading-[1.1] mb-500 tracking-[-0.02em]"
+                style={{ fontSize: 'clamp(28px, 3.8vw, 52px)', fontWeight: 500 }}
               >
                 {t.hero_pre}
                 <span className="text-signal-blue">{t.hero_emphasis}</span>
@@ -730,6 +786,10 @@ export default function Home() {
           </div>
         </section>
 
+        {mode === 'qa' ? (
+          <QAMode lang={lang} />
+        ) : (
+        <>
         {/* INPUT */}
         <section id="input" className="mb-1200">
           <SectionRow label="01" title={t.sec_input} desc={t.sec_input_desc} />
@@ -982,6 +1042,15 @@ export default function Home() {
             <HUDFrame className="mt-500 border border-hairline bg-surface px-500 py-400 flex flex-wrap items-center justify-between gap-300">
               <div className="text-100 font-mono text-ink-tertiary">{t.export_desc}</div>
               <div className="flex items-center gap-200">
+                {trendResults.length > 0 && (
+                  <button
+                    onClick={archiveTrendsAsKB}
+                    className="inline-flex items-center gap-200 px-300 h-800 rounded-2 border border-coral/40 text-100 font-mono uppercase tracking-wider text-coral hover:bg-coral-soft transition-colors duration-150 ease-console"
+                    title="把本轮趋势数据切片+向量化，加入知识库供下次问题检索"
+                  >
+                    + 归档为 KB
+                  </button>
+                )}
                 <button onClick={copyBrief} className="inline-flex items-center gap-200 px-300 h-800 rounded-2 border border-hairline text-100 font-mono uppercase tracking-wider text-ink-secondary hover:bg-surface-2 hover:text-ink-primary transition-colors duration-150 ease-console">
                   <Copy className="w-3 h-3" /> {t.copy_md}
                 </button>
@@ -998,6 +1067,8 @@ export default function Home() {
             <AlertCircle className="w-4 h-4 mt-100 shrink-0 text-signal-red" strokeWidth={2} />
             <span className="text-200 font-mono leading-relaxed text-ink-primary">{error}</span>
           </div>
+        )}
+        </>
         )}
       </div>
 
@@ -1564,25 +1635,25 @@ function KBConnectPanel({
         />
       </div>
 
-      {/* Preset corpora (server-side, opt-in by id) */}
+      {/* Preset corpora (server-side, opt-in by id) — toggleable: click attached chip to detach */}
       {presets.length > 0 && (
         <div className="mt-300 flex flex-wrap items-center gap-200">
           <span className="text-100 font-mono uppercase tracking-[0.12em] text-ink-tertiary mr-200">预设</span>
           {presets.map(p => {
-            const isAttached = docs.some(d => d.kind === 'preset' && d.presetId === p.id)
+            const attachedDoc = docs.find(d => d.kind === 'preset' && d.presetId === p.id)
+            const isAttached = !!attachedDoc
             return (
               <button
                 key={p.id}
-                onClick={() => onAttachPreset(p)}
-                disabled={isAttached}
+                onClick={() => isAttached ? onRemove(attachedDoc!.id) : onAttachPreset(p)}
                 className={`inline-flex items-center gap-200 h-700 px-300 rounded-2 border text-100 transition-colors duration-150 ease-console ${
                   isAttached
-                    ? 'border-coral/40 bg-coral-soft text-coral cursor-default'
+                    ? 'border-coral bg-coral-soft text-coral hover:bg-coral hover:text-on-coral'
                     : 'border-hairline text-ink-secondary hover:border-coral/60 hover:text-coral'
                 }`}
-                title={p.description}
+                title={isAttached ? `点击移除 · ${p.description}` : p.description}
               >
-                <span className="font-mono font-semibold tracking-wide">+ {p.name}</span>
+                <span className="font-mono font-semibold tracking-wide">{isAttached ? '✓' : '+'} {p.name}</span>
                 <span className="font-mono text-ink-tertiary text-[10px] tabular-nums">{p.chunkCount} 块</span>
               </button>
             )
@@ -1623,31 +1694,69 @@ function KBConnectPanel({
 
 function KBDocRow({ doc, onRemove, t }: { doc: KBDoc; onRemove: (id: string) => void; t: Dict }) {
   const isPreset = doc.kind === 'preset'
-  const statusBadge = (() => {
-    if (doc.status === 'chunking') return { label: t.kb_status_chunking, color: 'text-coral', icon: <Loader className="w-3 h-3 animate-spin" /> }
-    if (doc.status === 'embedding') return { label: t.kb_status_embedding, color: 'text-coral', icon: <Loader className="w-3 h-3 animate-spin" /> }
-    if (doc.status === 'ready')    return { label: isPreset ? '预设' : t.kb_status_ready, color: isPreset ? 'text-coral' : 'text-signal-green', icon: <Check className="w-3 h-3" /> }
-    return { label: t.kb_status_failed, color: 'text-signal-amber', icon: <Ban className="w-3 h-3" /> }
+
+  // Vectorization phase pipeline shown inline: 抓取 → 切片 → 向量化 → 就绪
+  // Each step lights up based on doc.status. Visual feedback for the embedding work.
+  const phases: Array<{ key: string; label: string; state: 'pending' | 'active' | 'done' }> = (() => {
+    const s = doc.status
+    const isDone = s === 'ready'
+    const isFailed = s === 'failed'
+    const chunkingActive = s === 'chunking'
+    const embeddingActive = s === 'embedding'
+    return [
+      { key: 'fetch',  label: '抓取', state: isFailed ? 'pending' : (chunkingActive || embeddingActive || isDone) ? 'done' : 'pending' },
+      { key: 'chunk',  label: '切片', state: isFailed ? 'pending' : chunkingActive ? 'active' : (embeddingActive || isDone) ? 'done' : 'pending' },
+      { key: 'embed',  label: '向量化', state: isFailed ? 'pending' : embeddingActive ? 'active' : isDone ? 'done' : 'pending' },
+      { key: 'ready',  label: '入库', state: isFailed ? 'pending' : isDone ? 'done' : 'pending' },
+    ]
   })()
+
   const chunkLabel = isPreset
     ? `${doc.size} 块 · 服务端`
-    : t.kb_chunks(doc.chunks.length)
+    : doc.status === 'ready'
+      ? `${doc.chunks.length} 块 · 1024 dim`
+      : doc.status === 'chunking' && doc.size > 0
+        ? `${doc.size.toLocaleString()} 字 · 切片中`
+        : doc.status === 'embedding'
+          ? '正在向量化 BGE-M3'
+          : doc.status === 'failed' ? '' : t.kb_chunks(doc.chunks.length)
+
   return (
-    <div className="flex items-center justify-between gap-300 px-300 h-800 rounded-2 border border-hairline bg-surface-2/40">
-      <div className="flex items-center gap-300 min-w-0 flex-1">
-        <span className={`shrink-0 ${statusBadge.color}`}>{statusBadge.icon}</span>
-        <span className="text-100 font-mono text-ink-primary truncate">{doc.name}</span>
-        <span className="shrink-0 text-100 font-mono text-ink-tertiary">{chunkLabel}</span>
-        <span className={`shrink-0 text-100 font-mono font-semibold tracking-wider ${statusBadge.color}`}>{statusBadge.label}</span>
-        {doc.error && <span className="text-100 font-mono text-signal-amber truncate">{doc.error}</span>}
-      </div>
+    <div className="flex flex-col gap-200 px-400 py-300 rounded-2 border border-hairline bg-surface-2/40">
+      <div className="flex items-center justify-between gap-300">
+        <div className="flex items-center gap-300 min-w-0 flex-1">
+          <span className="text-100 font-mono text-ink-primary truncate">{doc.name}</span>
+          <span className="shrink-0 text-100 font-mono text-ink-tertiary">{chunkLabel}</span>
+          {doc.error && <span className="text-100 font-mono text-signal-amber truncate">{doc.error}</span>}
+        </div>
       <button
         onClick={() => onRemove(doc.id)}
         aria-label={t.kb_remove}
-        className="shrink-0 text-ink-tertiary hover:text-signal-amber transition-colors duration-150"
-      >
-        <X className="w-3 h-3" />
-      </button>
+          className="shrink-0 text-ink-tertiary hover:text-signal-amber transition-colors duration-150"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+      {/* Phase pipeline — visualizes the chunk → embed → ready flow */}
+      <div className="flex items-center gap-100 mt-200">
+        {phases.map((p, i) => {
+          const dot =
+            p.state === 'done' ? 'bg-success' :
+            p.state === 'active' ? 'bg-coral animate-pulseDot' :
+            'bg-hairline'
+          const txt =
+            p.state === 'done' ? 'text-ink-secondary' :
+            p.state === 'active' ? 'text-coral' :
+            'text-ink-tertiary/60'
+          return (
+            <div key={p.key} className="flex items-center gap-100">
+              <span className={`w-[6px] h-[6px] rounded-full ${dot}`} aria-hidden />
+              <span className={`text-[10px] font-mono tracking-wide ${txt}`}>{p.label}</span>
+              {i < phases.length - 1 && <span className={`w-300 h-px ${p.state === 'done' ? 'bg-success/40' : 'bg-hairline'}`} />}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

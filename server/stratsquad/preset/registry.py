@@ -18,6 +18,11 @@ PRESET_MANIFEST: dict[str, dict] = {
         "description": "40 篇 EN + ZH 维基百科条目,覆盖品类、商业化、区域市场、头部产品、电竞、发行商。",
         "file": "wikipedia.json",
     },
+    "steam-games": {
+        "name": "Steam · 头部产品",
+        "description": "约 40 款 Steam 头部游戏的产品页 (描述、玩法标签、开发商),来自官方 Storefront API。",
+        "file": "steam-games.json",
+    },
 }
 
 

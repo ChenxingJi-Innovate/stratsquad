@@ -155,6 +155,60 @@ async def kb_ingest_endpoint(req: Request) -> StreamingResponse:
     return StreamingResponse(_ingest_stream(payload), headers=SSE_HEADERS)
 
 
+# ─── /api/kb/archive-trends · turn a completed run's trend bundle into RAG ──
+# Answers the "why can't trend data become RAG" question directly: it can,
+# the data just needs to be chunked + embedded. This endpoint does that.
+async def _archive_trends_stream(payload: dict) -> AsyncIterator[bytes]:
+    bundle_in = payload.get("bundle") or {}
+    label = payload.get("label") or "本轮趋势"
+    results = bundle_in.get("results") or []
+    ok_results = [r for r in results if r.get("ok") and (r.get("digest") or r.get("summary"))]
+    if not ok_results:
+        yield to_sse({"type": "error", "message": "trend bundle is empty"})
+        return
+    if not os.getenv("SILICONFLOW_API_KEY"):
+        yield to_sse({"type": "error", "message": "SILICONFLOW_API_KEY required for embedding"})
+        return
+
+    # Compose a single corpus document from all source digests.
+    sections: list[str] = []
+    rationale = (bundle_in.get("plan") or {}).get("rationale") or ""
+    if rationale:
+        sections.append(f"## 采集策略\n\n{rationale}\n")
+    for r in ok_results:
+        head = f"## {r.get('label') or r.get('source')}"
+        body = r.get("digest") or r.get("summary") or ""
+        sections.append(f"{head}\n\n{body}\n")
+    text = "\n".join(sections)
+
+    yield to_sse({"type": "chunking", "size": len(text)})
+    chunks = chunk_markdown(label, text)
+    if not chunks:
+        yield to_sse({"type": "error", "message": "no chunks produced"})
+        return
+
+    yield to_sse({"type": "embedding"})
+    vectors = await embed_batched([c.text for c in chunks], batch_size=16)
+    doc_id = uuid.uuid4().hex[:8]
+    user_chunks = [
+        UserChunk(
+            id=f"{doc_id}#{i}", text=c.text, embedding=vectors[i],
+            source=c.source, heading=c.heading,
+        )
+        for i, c in enumerate(chunks)
+    ]
+    yield to_sse({
+        "type": "ready",
+        "chunks": [c.model_dump(by_alias=True, exclude_none=True) for c in user_chunks],
+    })
+
+
+@app.post("/api/kb/archive-trends")
+async def kb_archive_trends_endpoint(req: Request) -> StreamingResponse:
+    payload = await req.json()
+    return StreamingResponse(_archive_trends_stream(payload), headers=SSE_HEADERS)
+
+
 # ─── /api/qa · single-agent ReAct with tool calling ─────────────────────────
 async def _qa_stream(payload: dict) -> AsyncIterator[bytes]:
     """Stream a Q&A run: reasoning tokens + tool_call + tool_result + final."""
