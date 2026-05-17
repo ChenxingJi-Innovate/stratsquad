@@ -1,27 +1,47 @@
 # StratSquad
 
-> Multi-agent game-industry strategy research console. Orchestrator + 4 parallel sub-agents + judge + composer, powered by DeepSeek V4. Built for game-market strategy work: window evaluation, competitor scan, monetization read, policy risk.
+> Multi-agent game-industry strategy research console. LangGraph orchestrates a
+> 7-agent pipeline (orchestrator + 4 expert sub-agents + judge + composer) against
+> DeepSeek V4, BGE-M3 hybrid RAG, BGE reranker, and 9 live trend data sources.
+> Next.js + Tailwind frontend, FastAPI + Python backend.
 
 See parent workspace `../CLAUDE.md` for shared context, glossary, and house style (no em dashes, etc.).
+
+## Architecture
+
+```
+┌──────────────────────────────┐         ┌───────────────────────────────┐
+│  Vercel · Next.js frontend   │         │  Python FastAPI · LangGraph   │
+│  app/                        │ ──SSE→  │  server/                      │
+│   ├─ page.tsx                │  proxy  │   └─ stratsquad/              │
+│   ├─ api/run/route.ts        │         │       ├─ graph.py (StateGraph)│
+│   ├─ api/kb/ingest/route.ts  │         │       ├─ nodes/  (7 agents)   │
+│   └─ lib/ (types + icons)    │         │       ├─ rag/    (BGE-M3)     │
+└──────────────────────────────┘         │       └─ trends/ (9 sources)  │
+                                          └───────────────────────────────┘
+```
+
+The Next.js routes are thin SSE proxies; **all orchestration runs in Python**.
 
 ## Pipeline
 
 ```
-Strategy question (+ optional corpus paste)
-  → Orchestrator: decompose into 4 sub-briefs
-  → RAG retrieval: trend brief → embed (BGE-M3 via SiliconFlow) → top-5 chunks
-  → Trend planner: pick 4-7 sources from 9 live public APIs (region-aware)
-  → Dispatch: parallel fetch from picked sources, stream results to UI as they land
-  → Parallel: Competitor / Trend / Market / Risk agents (trend gets RAG hits + live trend bundle as citations)
-  → Judge: scores each on 4 rubrics (evidence/logic/actionability/novelty), 0-100, threshold 70
-  → Retry: any sub-agent below threshold gets one fresh attempt with a stricter prompt
-  → Re-judge after retries
+Strategy question
+  → Orchestrator: decompose into 4 sub-briefs (DeepSeek JSON-mode)
+  → ┌─ Retrieve: BGE-M3 hybrid (corpus + user KB) → BGE-reranker → top-5 hits
+    └─ Trend dispatch: LLM planner picks 4-7 of 9 sources → asyncio.gather
+  → Competitor / Trend / Market / Risk: 4 expert agents in parallel
+                                        (trend agent cites RAG hits + trend data)
+  → Judge: 4-dim rubric (evidence/logic/actionability/novelty), threshold 70
+  → conditional retry edge: any verdict='retry' → rerun failed experts → re-judge
   → Composer: integrate 4 outputs into a 战略简报.md
 ```
 
-## Live trend data sources (lib/trends/)
+LangGraph emits custom events at every step (`agent_start`, `agent_token`, `plan`,
+`rag_hits`, `trend_plan`, `trend_result`, `judge`, `brief`, ...). FastAPI forwards
+these as SSE; the frontend renders them live.
 
-9 public data sources the trend planner can pick from. Region-aware: planner skips Chinese sources for SEA questions and vice versa.
+## Live trend data sources
 
 | Source | Needs key | What it returns |
 |---|---|---|
@@ -31,126 +51,78 @@ Strategy question (+ optional corpus paste)
 | reddit | `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` + `REDDIT_USER_AGENT` | 30-day top posts per subreddit + aggregate scores |
 | youtube | `YOUTUBE_API_KEY` | Top videos for keywords in a region, with view + like counts |
 | appstore | no | iTunes RSS top-free + top-grossing games per country (15 countries supported) |
-| huya | no | Mainland China livestream category viewer counts (`live.huya.com/liveHttpUI/getLiveList`) |
-| douyu | no | Mainland China livestream rank list per category (`douyu.com/japi/weblist/.../getRanklistByCateId`) |
+| huya | no | Mainland China livestream category viewer counts |
+| douyu | no | Mainland China livestream rank list per category |
 | bilibili | no | Either live-area aggregates (game categories) or video search top results |
 
-All sources gracefully return `{ ok: false, error }` on failure; trend agent runs even with zero live results.
+All sources gracefully degrade. Missing key or 4xx/5xx response → trend agent still
+runs without that source.
 
 ## File layout
 
 ```
-app/
-├── layout.tsx               root layout
-├── page.tsx                 single-page UI: hero + input + live agent timeline + judge grid + brief
-├── globals.css              tailwind + prose-brief markdown styles
-└── api/run/route.ts         SSE streaming orchestration (Node runtime, 300s max duration)
+StratSquad/
+├── app/                         Next.js App Router
+│   ├── page.tsx                 single-page UI (Track 2 FUI design)
+│   ├── api/run/route.ts         proxy → Python /api/run
+│   └── api/kb/ingest/route.ts   proxy → Python /api/kb/ingest
+├── lib/                         FRONTEND ONLY (types + icons)
+│   ├── types.ts                 StreamEvent / AgentName / JudgeScore / ...
+│   ├── trends/types.ts          TrendSource / TrendQuery / TrendResult / labels
+│   ├── rag/types.ts             RagHit / UserChunk
+│   └── icons/brands.tsx         9 brand SVG icons
+├── server/                      Python LangGraph backend
+│   ├── pyproject.toml           uv-managed deps (fastapi, langgraph, langchain, ...)
+│   ├── stratsquad/
+│   │   ├── main.py              FastAPI app
+│   │   ├── graph.py             StateGraph definition
+│   │   ├── state.py             StratSquadState + reducers
+│   │   ├── agent_runtime.py     LangGraph-aware run_streamed / run_json
+│   │   ├── llm.py               DeepSeek via ChatOpenAI
+│   │   ├── sse.py               SSE helpers
+│   │   ├── types.py             pydantic mirrors of frontend types
+│   │   ├── nodes/               7 graph nodes
+│   │   ├── rag/                 chunk + embed + retrieve + rerank + store
+│   │   └── trends/              9 source clients + planner + dispatch
+│   ├── corpus/                  static knowledge base (markdown)
+│   ├── data/                    chunks.json + embeddings.json
+│   └── eval/                    labeled retrieval test set
+├── Dockerfile                   frontend container (Next.js standalone)
+└── server/Dockerfile            backend container (Python 3.12 + uv)
+```
 
-lib/
-├── deepseek.ts              OpenAI SDK pointed at api.deepseek.com; model from DEEPSEEK_MODEL env (default deepseek-v4-flash)
-├── stream.ts                SSEWriter wrapping ReadableStream controller
-├── types.ts                 StreamEvent / JudgeScore / Subtask / AgentName / RagHit / labels
-├── agents/
-│   ├── _run.ts              runStreamed (token-streamed) and runJSON (parsed) helpers
-│   ├── orchestrator.ts      → Subtask[4]
-│   ├── competitor.ts        markdown, retry-aware via attempt arg
-│   ├── trend.ts             markdown, takes RagHit[] for grounded citations
-│   ├── market.ts            markdown
-│   ├── risk.ts              markdown
-│   ├── judge.ts             → JudgeScore[4]
-│   └── composer.ts          → markdown
-└── rag/
-    ├── types.ts             Chunk, EmbeddedChunk, RagHit
-    ├── chunk.ts             CJK-aware chunker (~400 chars, 60 char overlap, heading-tracked)
-    ├── embed.ts             SiliconFlow BGE-M3 client (OpenAI-compatible)
-    ├── store.ts             lazy-load data/embeddings.json once per Node process
-    └── retrieve.ts          brute-force cosine top-k (sub-ms for <1K chunks)
+## Local dev
 
-scripts/                     offline pipeline (npm run rag:*), runs via tsx
-├── ingest.ts                corpus/*.md → data/chunks.json
-├── embed.ts                 data/chunks.json → data/embeddings.json (supports --out=path)
-└── eval.ts                  data/embeddings*.json + labeled.json → eval/results.md
+Two processes:
 
-corpus/, data/, eval/        knowledge base, embeddings, labeled eval set
+```bash
+# Terminal 1 · Python backend
+cd server
+uv sync
+cp .env.example .env   # fill in DEEPSEEK + SILICONFLOW + trend keys
+uv run uvicorn stratsquad.main:app --reload --port 8000
+
+# Terminal 2 · Next.js frontend
+npm install
+npm run dev            # http://localhost:3002
 ```
 
 ## Key conventions
 
-- All API calls live server-side in `app/api/run/route.ts` and `lib/agents/*`. Never call DeepSeek from the client.
-- The SSE route uses `runtime: 'nodejs'` (Edge has issues with the OpenAI SDK's body stream). `maxDuration: 300` for Vercel Pro.
-- Model is `process.env.DEEPSEEK_MODEL ?? 'deepseek-v4-flash'` in one place (`lib/deepseek.ts`). Swap models there.
-- Each agent module exports a single `runX(...)` async function. The orchestrator at `app/api/run/route.ts` chains them.
-- Sub-agents run via `Promise.all`. Their token streams interleave on the wire; the UI uses `event.agent` to route deltas.
-- Judge defensively recomputes `total` (weighted) and `verdict` so the model can't lie about pass/fail.
-- Retry loop is bounded to one round. Worst-case wall-clock ≈ 2× a clean run.
+- **All DeepSeek + LLM logic lives in Python.** Frontend never holds API keys.
+- **SSE wire format is preserved** from the old TS pipeline so the UI didn't need
+  to change — events still carry `{ type: 'agent_token', agent, delta }` etc.
+- **Pydantic models use camelCase aliases** (`alias_generator` in `types.py`) so
+  TypeScript can consume JSON without renaming.
+- **LangSmith tracing optional.** Set `LANGSMITH_API_KEY` → every run lands in
+  the `stratsquad` project with full token-level traces.
 
-## Prompt design notes
+## Iteration ideas
 
-- Orchestrator prompt is the only one that's JSON-mode. Sub-agents and composer return markdown.
-- Each sub-agent accepts an `attempt` arg. `attempt > 1` injects a "上一轮证据不足" stricter clause that demands quantification.
-- Composer enforces a 7-heading template so the brief is predictable for downstream parsing / training.
-- All prompts are in Chinese (UI 中文 by default per workspace style). Code comments in English.
-- No em dashes in any generated text (workspace house style enforced via composer prompt).
-
-## Event protocol
-
-`StreamEvent` union in `lib/types.ts`. UI deserializes from `data: <json>\n\n` lines. Adding a new event:
-
-1. Add a variant to `StreamEvent` in `lib/types.ts`
-2. `sse.emit(...)` from inside an agent or the orchestration route
-3. Add a case in `handleEvent` in `app/page.tsx`
-
-## Run
-
-```bash
-npm install
-cat > .env.local <<'EOF'
-# Required
-DEEPSEEK_API_KEY=sk-xxx
-
-# Optional: BGE-M3 RAG over corpus/*.md
-SILICONFLOW_API_KEY=sk-xxx
-
-# Optional: live trend data sources (each is independent; missing keys → that source silently skipped)
-TWITCH_CLIENT_ID=...
-TWITCH_CLIENT_SECRET=...
-REDDIT_CLIENT_ID=...
-REDDIT_CLIENT_SECRET=...
-REDDIT_USER_AGENT=stratsquad/0.1 by <your_reddit_username>
-YOUTUBE_API_KEY=AIzaSy...
-STEAM_API_KEY=...
-EOF
-npm run dev
-# http://localhost:3002
-```
-
-Key registration:
-- **Twitch**: https://dev.twitch.tv/console/apps → Register application (free)
-- **Reddit**: https://www.reddit.com/prefs/apps → "create another app" → script type (free)
-- **YouTube**: https://console.cloud.google.com/apis/credentials → enable YouTube Data API v3 → API key (free, 10K units/day)
-- **Steam** (optional): https://steamcommunity.com/dev/apikey
-
-## RAG specifics
-
-- Default embedding model is `BAAI/bge-m3` (1024-d) via SiliconFlow's OpenAI-compatible endpoint.
-- Query used for retrieval is the **trend agent's brief** (orchestrator output), not the raw user question — the brief is sharper and produces better hits.
-- Top-k = 5 by default; tweak in `app/api/run/route.ts`.
-- `data/embeddings.json` is checked into git so production deploys don't need an embedding API call at build time. Only query embedding hits SiliconFlow at request time.
-- If `SILICONFLOW_API_KEY` is missing OR `data/embeddings.json` is empty, the run silently skips RAG and falls back to letting trend agent rely on parametric knowledge.
-- Eval set (`eval/labeled.json`) maps queries → (source, heading) tuples, so chunking changes don't invalidate the labels.
-
-## Iteration ideas (not yet built)
-
-- Hybrid retrieval (BM25 + dense reranker) for technical queries.
-- MCP server wrapper: expose `/api/run` as an MCP tool, drop into Claude Desktop / Cursor.
-- Tool-calling sub-agents: give competitor agent a Sensor Tower / GameLook scraper tool.
-- SFT export: rate each composed brief, ship JSONL for fine-tuning a domain strategy writer.
-- Eval harness for the LLM (not just the retriever): ~30 strategy questions, head-to-head DeepSeek V4 / V4-Flash / Reasoner / GPT-4o-mini.
-
-## Anti-patterns to avoid
-
-- Don't call DeepSeek from client; key would leak.
-- Don't run sub-agents sequentially; you'll exceed Vercel's 300s limit on heavy questions.
-- Don't trust the judge's own `total` field; recompute.
-- Don't retry more than once; double-retries explode cost and rarely improve quality.
-- Don't render the composer output without markdown parsing; the prompt explicitly produces markdown.
+- DPO pair generation: rerun the same question with two prompt variants, judge
+  picks winner → JSONL ready for DPO fine-tuning.
+- Tool-using trend agent: give the experts an actual tool-call surface
+  (LangChain `Tool` interface) rather than the pre-fetched bundle.
+- Per-session checkpointing: persist `StratSquadState` via LangGraph's checkpoint
+  saver, resume across page reloads.
+- Cost dashboard: integrate LangSmith → Grafana for per-run DeepSeek spend.

@@ -1,45 +1,36 @@
-import { SSEWriter, sseHeaders } from '../../../lib/stream'
-import { runPipeline } from '../../../lib/pipeline'
-import type { TrendSource, UserChunk } from '../../../lib/types'
+// Thin proxy: forward POST /api/run to the Python LangGraph backend, stream SSE back.
+// Backend URL comes from PYTHON_BACKEND_URL env var. Defaults to localhost for dev.
+//
+// The frontend's SSE parsing is unchanged — Python emits the same StreamEvent shape
+// the Node pipeline used to emit (agent_token / plan / rag_hits / trend_result / ...).
 
-// Vercel will let this stream up to 300s on Pro / 60s on Hobby. Force Node runtime — Edge has fetch limits with the OpenAI SDK.
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-export async function POST(req: Request) {
-  const body = await req.json() as {
-    question?: string
-    enabledSources?: TrendSource[]
-    userChunks?: UserChunk[]
-  }
-  const question = body.question ?? ''
-  if (!question.trim()) {
-    return new Response('Missing question', { status: 400 })
-  }
-  if (!process.env.DEEPSEEK_API_KEY) {
-    return new Response('Server missing DEEPSEEK_API_KEY', { status: 500 })
-  }
+const BACKEND = process.env.PYTHON_BACKEND_URL ?? 'http://127.0.0.1:8000'
 
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const sse = new SSEWriter(controller)
-      try {
-        await runPipeline(
-          {
-            question,
-            enabledSources: body.enabledSources,
-            userChunks: body.userChunks ?? [],
-          },
-          sse,
-        )
-        sse.emit({ type: 'complete' })
-      } catch (e: any) {
-        sse.emit({ type: 'error', message: e?.message ?? 'unknown error' })
-      } finally {
-        sse.close()
-      }
-    },
-  })
-
-  return new Response(stream, { headers: sseHeaders() })
+export async function POST(req: Request): Promise<Response> {
+  const body = await req.text()
+  try {
+    const upstream = await fetch(`${BACKEND}/api/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      cache: 'no-store',
+    })
+    if (!upstream.ok || !upstream.body) {
+      const err = await upstream.text().catch(() => '')
+      return new Response(`backend ${upstream.status}: ${err}`, { status: upstream.status || 502 })
+    }
+    return new Response(upstream.body, {
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
+    })
+  } catch (e: any) {
+    return new Response(`backend unreachable: ${e?.message ?? e}`, { status: 502 })
+  }
 }
