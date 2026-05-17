@@ -17,7 +17,10 @@ import {
   AppStoreIcon, HuyaIcon, DouyuIcon, BilibiliIcon,
 } from '../lib/icons/brands'
 
-const ALL_SOURCES: TrendSource[] = ['google-trends', 'steam', 'twitch', 'reddit', 'youtube', 'appstore', 'huya', 'douyu', 'bilibili']
+// Reddit excluded: Responsible Builder Policy (2025) requires per-app pre-approval,
+// not feasible for a portfolio demo. Keep the source module + type in the union for
+// future reinstatement, but the planner never picks it.
+const ALL_SOURCES: TrendSource[] = ['google-trends', 'steam', 'twitch', 'youtube', 'appstore', 'huya', 'douyu', 'bilibili']
 
 // Public data dashboard URL that mirrors what each API endpoint actually queries.
 // Verified 2026-05-16 — kept in sync with the underlying fetch URLs in lib/trends/*.
@@ -768,21 +771,72 @@ export default function Home() {
               }
             />
 
+            {/* Layered topology view: orchestrator (planner) → 4 parallel experts → judge → composer.
+                The 4 experts are visually grouped to reflect the LangGraph parallel fanout. */}
             <HUDFrame isActive={running} className="border border-hairline bg-surface overflow-hidden">
-              {AGENT_ORDER.map((name, i) => (
+              <AgentRow
+                key="orchestrator"
+                name="orchestrator"
+                label={agentLabels.orchestrator}
+                state={agents.orchestrator}
+                index={0}
+                brief={plan.find(p => p.agent === ('orchestrator' as SubAgent))?.brief}
+                score={undefined}
+                wasRetried={false}
+                isLast={false}
+                t={t}
+              />
+
+              {/* Parallel band — all 4 experts run concurrently via Promise.all */}
+              <div className="px-500 py-300 border-b border-hairline bg-canvas/40 flex items-center gap-300">
+                <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-coral">parallel</span>
+                <span className="flex-1 border-t border-hairline" />
+                <span className="text-[11px] font-mono text-ink-tertiary">4 agents · concurrent</span>
+              </div>
+              {(['competitor', 'trend', 'market', 'risk'] as SubAgent[]).map((name, i) => (
                 <AgentRow
                   key={name}
                   name={name}
                   label={agentLabels[name]}
                   state={agents[name]}
-                  index={i}
-                  brief={plan.find(p => p.agent === name as SubAgent)?.brief}
-                  score={scores.find(s => s.agent === name as SubAgent)}
-                  wasRetried={retries.includes(name as SubAgent)}
-                  isLast={i === AGENT_ORDER.length - 1}
+                  index={i + 1}
+                  brief={plan.find(p => p.agent === name)?.brief}
+                  score={scores.find(s => s.agent === name)}
+                  wasRetried={retries.includes(name)}
+                  isLast={false}
                   t={t}
                 />
               ))}
+              <div className="px-500 py-300 border-b border-hairline bg-canvas/40 flex items-center gap-300">
+                <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-ink-tertiary">join</span>
+                <span className="flex-1 border-t border-hairline" />
+                <span className="text-[11px] font-mono text-ink-tertiary">merge outputs</span>
+              </div>
+
+              <AgentRow
+                key="judge"
+                name="judge"
+                label={agentLabels.judge}
+                state={agents.judge}
+                index={5}
+                brief={undefined}
+                score={undefined}
+                wasRetried={false}
+                isLast={false}
+                t={t}
+              />
+              <AgentRow
+                key="composer"
+                name="composer"
+                label={agentLabels.composer}
+                state={agents.composer}
+                index={6}
+                brief={undefined}
+                score={undefined}
+                wasRetried={false}
+                isLast={true}
+                t={t}
+              />
             </HUDFrame>
           </section>
         )}
