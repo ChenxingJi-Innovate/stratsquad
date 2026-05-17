@@ -49,12 +49,21 @@ type KBDocStatus = 'chunking' | 'embedding' | 'ready' | 'failed'
 type KBDoc = {
   id: string
   name: string
-  kind: 'file' | 'url'
+  kind: 'file' | 'url' | 'preset'
   status: KBDocStatus
-  chunks: UserChunk[]
-  size: number              // chars
+  chunks: UserChunk[]         // empty for preset (server-side only)
+  size: number                // chars; for presets this is the chunk count
   error?: string
   addedAt: number
+  presetId?: string           // when kind === 'preset', sent in /api/run body
+}
+
+type PresetInfo = {
+  id: string
+  name: string
+  description: string
+  pageCount: number
+  chunkCount: number
 }
 
 const TREND_ICON: Record<TrendSource, React.ReactNode> = {
@@ -331,6 +340,7 @@ export default function Home() {
   )
   const [kbDocs, setKbDocs] = useState<KBDoc[]>([])
   const [kbUrl, setKbUrl] = useState('')
+  const [availablePresets, setAvailablePresets] = useState<PresetInfo[]>([])
   const [running, setRunning] = useState(false)
   const [error, setError] = useState('')
   const [agents, setAgents] = useState<Record<AgentName, AgentState>>(initAgents())
@@ -384,14 +394,15 @@ export default function Home() {
     const ctrl = new AbortController()
     abortRef.current = ctrl
 
-    const userChunks: UserChunk[] = kbDocs.flatMap(d => d.status === 'ready' ? d.chunks : [])
+    const userChunks: UserChunk[] = kbDocs.flatMap(d => d.kind !== 'preset' && d.status === 'ready' ? d.chunks : [])
+    const presets: string[] = kbDocs.filter(d => d.kind === 'preset' && d.presetId).map(d => d.presetId!)
     const enabled = ALL_SOURCES.filter(s => enabledSources[s])
 
     try {
       const res = await fetch('/api/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, enabledSources: enabled, userChunks }),
+        body: JSON.stringify({ question, enabledSources: enabled, userChunks, presets }),
         signal: ctrl.signal,
       })
       if (!res.ok || !res.body) throw new Error(await res.text() || 'request failed')
@@ -505,6 +516,30 @@ export default function Home() {
     setKbUrl('')
     streamIngest(id, { name: host, url })
   }
+
+  function attachPreset(p: PresetInfo) {
+    // Don't add the same preset twice
+    if (kbDocs.some(d => d.kind === 'preset' && d.presetId === p.id)) return
+    const doc: KBDoc = {
+      id: crypto.randomUUID(),
+      name: p.name,
+      kind: 'preset',
+      status: 'ready',
+      chunks: [],         // server-side only
+      size: p.chunkCount, // for the chip display
+      addedAt: Date.now(),
+      presetId: p.id,
+    }
+    setKbDocs(prev => [...prev, doc])
+  }
+
+  // Fetch the preset manifest once on mount.
+  useEffect(() => {
+    fetch('/api/kb/presets')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: PresetInfo[]) => setAvailablePresets(data ?? []))
+      .catch(() => setAvailablePresets([]))
+  }, [])
 
   function handleEvent(ev: StreamEvent) {
     switch (ev.type) {
@@ -723,6 +758,8 @@ export default function Home() {
               onUrlIngest={ingestUrl}
               onRemove={removeKbDoc}
               t={t}
+              presets={availablePresets}
+              onAttachPreset={attachPreset}
             />
 
             <div className="flex flex-wrap items-center justify-between gap-300 px-500 py-300 border-t border-hairline bg-surface-2/50">
@@ -1478,6 +1515,7 @@ function PlatformPicker({
 // KB connect panel: drag-drop file upload + URL ingest + uploaded doc list.
 function KBConnectPanel({
   docs, urlInput, onUrlChange, onFiles, onUrlIngest, onRemove, t,
+  presets, onAttachPreset,
 }: {
   docs: KBDoc[]
   urlInput: string
@@ -1486,6 +1524,8 @@ function KBConnectPanel({
   onUrlIngest: (url: string) => void
   onRemove: (id: string) => void
   t: Dict
+  presets: PresetInfo[]
+  onAttachPreset: (p: PresetInfo) => void
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -1526,6 +1566,32 @@ function KBConnectPanel({
         />
       </div>
 
+      {/* Preset corpora (server-side, opt-in by id) */}
+      {presets.length > 0 && (
+        <div className="mt-300 flex flex-wrap items-center gap-200">
+          <span className="text-100 font-mono uppercase tracking-[0.12em] text-ink-tertiary mr-200">预设</span>
+          {presets.map(p => {
+            const isAttached = docs.some(d => d.kind === 'preset' && d.presetId === p.id)
+            return (
+              <button
+                key={p.id}
+                onClick={() => onAttachPreset(p)}
+                disabled={isAttached}
+                className={`inline-flex items-center gap-200 h-700 px-300 rounded-2 border text-100 transition-colors duration-150 ease-console ${
+                  isAttached
+                    ? 'border-coral/40 bg-coral-soft text-coral cursor-default'
+                    : 'border-hairline text-ink-secondary hover:border-coral/60 hover:text-coral'
+                }`}
+                title={p.description}
+              >
+                <span className="font-mono font-semibold tracking-wide">+ {p.name}</span>
+                <span className="font-mono text-ink-tertiary text-[10px] tabular-nums">{p.chunkCount} 块</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* URL input */}
       <div className="mt-300 flex items-center gap-200">
         <div className="flex-1 flex items-center gap-200 px-300 h-800 rounded-2 border border-hairline bg-surface-2/30 focus-within:border-signal-blue/50">
@@ -1558,18 +1624,22 @@ function KBConnectPanel({
 }
 
 function KBDocRow({ doc, onRemove, t }: { doc: KBDoc; onRemove: (id: string) => void; t: Dict }) {
+  const isPreset = doc.kind === 'preset'
   const statusBadge = (() => {
-    if (doc.status === 'chunking') return { label: t.kb_status_chunking, color: 'text-signal-blue', icon: <Loader className="w-3 h-3 animate-spin" /> }
-    if (doc.status === 'embedding') return { label: t.kb_status_embedding, color: 'text-signal-blue', icon: <Loader className="w-3 h-3 animate-spin" /> }
-    if (doc.status === 'ready')    return { label: t.kb_status_ready,    color: 'text-signal-green', icon: <Check className="w-3 h-3" /> }
+    if (doc.status === 'chunking') return { label: t.kb_status_chunking, color: 'text-coral', icon: <Loader className="w-3 h-3 animate-spin" /> }
+    if (doc.status === 'embedding') return { label: t.kb_status_embedding, color: 'text-coral', icon: <Loader className="w-3 h-3 animate-spin" /> }
+    if (doc.status === 'ready')    return { label: isPreset ? '预设' : t.kb_status_ready, color: isPreset ? 'text-coral' : 'text-signal-green', icon: <Check className="w-3 h-3" /> }
     return { label: t.kb_status_failed, color: 'text-signal-amber', icon: <Ban className="w-3 h-3" /> }
   })()
+  const chunkLabel = isPreset
+    ? `${doc.size} 块 · 服务端`
+    : t.kb_chunks(doc.chunks.length)
   return (
     <div className="flex items-center justify-between gap-300 px-300 h-800 rounded-2 border border-hairline bg-surface-2/40">
       <div className="flex items-center gap-300 min-w-0 flex-1">
         <span className={`shrink-0 ${statusBadge.color}`}>{statusBadge.icon}</span>
         <span className="text-100 font-mono text-ink-primary truncate">{doc.name}</span>
-        <span className="shrink-0 text-100 font-mono text-ink-tertiary">{t.kb_chunks(doc.chunks.length)}</span>
+        <span className="shrink-0 text-100 font-mono text-ink-tertiary">{chunkLabel}</span>
         <span className={`shrink-0 text-100 font-mono font-semibold tracking-wider ${statusBadge.color}`}>{statusBadge.label}</span>
         {doc.error && <span className="text-100 font-mono text-signal-amber truncate">{doc.error}</span>}
       </div>

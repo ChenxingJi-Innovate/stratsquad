@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from .graph import GRAPH
+from .preset.registry import list_presets
 from .rag.chunk import chunk_markdown
 from .rag.embed import embed_batched
 from .sse import SSE_HEADERS, to_sse
@@ -54,6 +55,14 @@ async def health() -> dict:
     return {"ok": True, "version": "0.2.0"}
 
 
+@app.get("/api/kb/presets")
+async def kb_presets() -> JSONResponse:
+    """Lightweight manifest the frontend uses to render the preset picker."""
+    return JSONResponse(
+        [p.model_dump(by_alias=True) for p in list_presets()]
+    )
+
+
 # ─── /api/run · multi-agent strategy pipeline ────────────────────────────────
 async def _run_stream(payload: dict) -> AsyncIterator[bytes]:
     question = (payload.get("question") or "").strip()
@@ -65,6 +74,7 @@ async def _run_stream(payload: dict) -> AsyncIterator[bytes]:
         "corpus": payload.get("corpus", ""),
         "enabled_sources": payload.get("enabledSources"),
         "user_chunks": [UserChunk.model_validate(c) for c in (payload.get("userChunks") or [])],
+        "presets": payload.get("presets") or [],
     }
     try:
         async for mode, chunk in GRAPH.astream(state_in, stream_mode=["custom"]):

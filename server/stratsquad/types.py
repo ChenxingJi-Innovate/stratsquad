@@ -63,6 +63,17 @@ class UserChunk(CamelModel):
     heading: Optional[str] = None
 
 
+# A preset corpus available on the server. The chunks live on disk (too large to
+# round-trip), so the client opts in by id and the server merges them into the
+# retrieval pool inside /api/run.
+class PresetInfo(CamelModel):
+    id: str
+    name: str
+    description: str
+    page_count: int
+    chunk_count: int
+
+
 # ─── Trend data ──────────────────────────────────────────────────────────────
 TrendSource = Literal[
     "google-trends", "steam", "twitch", "reddit", "youtube",

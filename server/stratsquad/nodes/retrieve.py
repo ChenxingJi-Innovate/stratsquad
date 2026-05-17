@@ -1,10 +1,12 @@
-"""RAG retrieve node. Hybrid if user uploaded KB chunks, dense-only otherwise."""
+"""RAG retrieve node. Hybrid if user uploaded KB chunks or opted into a preset corpus."""
 from __future__ import annotations
 import os
 from langgraph.config import get_stream_writer
 
 from ..rag.retrieve import retrieve, retrieve_hybrid
 from ..state import StratSquadState
+from ..types import UserChunk
+from ..preset.registry import load_preset_chunks
 
 
 def _brief_of(state: StratSquadState, agent: str) -> str:
@@ -20,7 +22,12 @@ async def retrieve_node(state: StratSquadState) -> dict:
         return {"rag_hits": []}
 
     trend_brief = _brief_of(state, "trend")
-    user_chunks = state.get("user_chunks", []) or []
+    user_chunks: list[UserChunk] = list(state.get("user_chunks", []) or [])
+
+    # Merge any opted-in presets (loaded server-side, never round-tripped to client).
+    for preset_id in state.get("presets", []) or []:
+        user_chunks.extend(load_preset_chunks(preset_id))
+
     try:
         if user_chunks:
             hits = await retrieve_hybrid(trend_brief, user_chunks, candidate_k=20, final_k=5)

@@ -41,6 +41,7 @@ class StratSquadState(TypedDict, total=False):
     corpus: str
     enabled_sources: Optional[list[TrendSource]]
     user_chunks: list[UserChunk]
+    presets: list[str]            # opt-in preset IDs ("wikipedia"); server merges them
 
     # Mid-flight
     plan: Annotated[list[Subtask], replace]
