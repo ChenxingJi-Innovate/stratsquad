@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { marked } from 'marked'
+import BriefRenderer from './BriefRenderer'
 import {
   AlertCircle, Brain, Target, TrendingUp,
   Globe, ShieldAlert, Scale, FileText, RotateCw, Download, Copy, ChevronDown,
@@ -197,7 +198,7 @@ const i18n: Record<Lang, Dict> = {
     sec_input_desc: '',
     q_placeholder: '例：评估 2026 下半年发布一款 MOBA 手游进入东南亚市场的窗口期...',
     platforms_label: '数据源',
-    platforms_desc: n => `${n}/9 启用`,
+    platforms_desc: n => `${n}/${ALL_SOURCES.length} 启用`,
     platforms_all: '全选',
     platforms_clear: '全清',
     kb_label: '知识库',
@@ -279,7 +280,7 @@ const i18n: Record<Lang, Dict> = {
     sec_input_desc: '',
     q_placeholder: 'e.g. Evaluate the window for launching a MOBA in SEA in H2 2026...',
     platforms_label: 'data sources',
-    platforms_desc: n => `${n}/9 active`,
+    platforms_desc: n => `${n}/${ALL_SOURCES.length} active`,
     platforms_all: 'all',
     platforms_clear: 'none',
     kb_label: 'knowledge base',
@@ -976,10 +977,7 @@ export default function Home() {
           <section className="mb-1200 animate-fadeIn">
             <SectionRow label="06" title={t.sec_brief} desc={t.sec_brief_desc} />
             <HUDFrame className="border border-hairline bg-surface p-700 sm:p-900">
-              <div
-                className="prose-console prose-brief font-sans text-200 leading-[1.85]"
-                dangerouslySetInnerHTML={{ __html: marked.parse(brief, { breaks: true }) as string }}
-              />
+              <BriefRenderer markdown={brief} />
             </HUDFrame>
             <HUDFrame className="mt-500 border border-hairline bg-surface px-500 py-400 flex flex-wrap items-center justify-between gap-300">
               <div className="text-100 font-mono text-ink-tertiary">{t.export_desc}</div>
@@ -1068,7 +1066,7 @@ function HUDSourceGrid({ enabled, results, lang, runningState }: {
       <div className="px-400 py-300 border-b border-hairline flex items-center gap-300">
         <span className="text-[11px] font-mono text-ink-tertiary tracking-[0.1em]">{headerLabel}</span>
         <span className="flex-1" />
-        <span className="text-[11px] font-mono text-ink-tertiary tabular-nums">{onCount}/9</span>
+        <span className="text-[11px] font-mono text-ink-tertiary tabular-nums">{onCount}/{ALL_SOURCES.length}</span>
       </div>
       <div className="grid grid-cols-3">
         {ALL_SOURCES.map((s, i) => {

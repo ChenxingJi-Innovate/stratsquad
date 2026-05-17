@@ -61,14 +61,15 @@ async def run_trend_planner(
 {constraint}
 
 规则:
-- 在用户允许的源里选 5-8 个 (如果允许源 < 5 就全选)。把"区域适配"放在第一位。
-- **中国相关问题 (任务里出现 "中国"、"国内"、"中国市场"、"反向参考" 等词): 必选**
-  · appstore region=cn (中国 iOS 榜单)
-  · huya + douyu + bilibili 至少两个 (按游戏在已知 category 列表里取舍)
-  · google-trends region=CN
-- **海外问题: 必选** google-trends 对应区域 (US/JP/KR/ID/VN/PH/TH/MY 任选) + twitch + youtube + appstore 对应国家。huya/douyu/bilibili 不选。
-- **跨区域问题** (海外 + 中国对比): 海外侧选 4 个,中国侧必含 appstore cn + 至少一个 huya/douyu/bilibili。
-- 严禁只选海外源 + cn 缺位。如果问题涉及中国市场,缺 appstore cn 就是错误。
+- **默认尽可能多选**(用户允许的源里选 6-8 个)。游戏行业战略问题几乎总是跨区域:头部产品 (王者荣耀/原神/MLBB/PUBG) 同时在中国与海外运营,任何战略决策都需要双侧数据交叉验证。
+- **基线 (任何问题都要包含)**:
+  · appstore region=cn (中国 iOS 榜单 — 即使是海外问题,中国头部产品的中国市场表现也是关键对照)
+  · huya + douyu + bilibili 至少两个 (按游戏 category 取舍;不在已知列表内的就跳过)
+  · appstore 海外区域 (us / jp / kr / 东南亚国家之一)
+- **海外问题加选**: google-trends 对应区域 + twitch + youtube
+- **中国为主问题加选**: google-trends region=CN + 上述基线
+- **跨区域问题**: 基线 + google-trends 海外区域 + youtube + twitch
+- 中国直播平台 (虎牙/斗鱼/B站) 是游戏行业最重要的实时风向标之一,不要因为问题"是海外的"就完全不选。
 - 关键词用中英对照。给中国市场的关键词用中文，给海外的用英文。
 - gameTitles 用游戏的英文常用名 (Mobile Legends, Honor of Kings, Genshin Impact 等)。
 - huya/douyu/bilibili 的 category 必须严格在上面列表里，否则跳过这个源。
