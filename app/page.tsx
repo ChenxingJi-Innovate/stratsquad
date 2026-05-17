@@ -87,10 +87,12 @@ type Dict = {
   runtime_ready: string
   eyebrow_issue: string
   eyebrow_status: string
+  hero_kicker: string
   hero_pre: string
   hero_emphasis: string
   hero_post: string
   hero_desc: string
+  hero_cta: string
   spec_strip: string[]
   pipeline_label: string
   pipeline_lines: string[]
@@ -157,11 +159,13 @@ const i18n: Record<Lang, Dict> = {
     runtime_ready: '运行时就绪',
     eyebrow_issue: '战情通道 · 公开 · 频段 02',
     eyebrow_status: '实时',
-    hero_pre: '四位智能体，围绕一个战略问题展开',
-    hero_emphasis: '推演',
+    hero_kicker: '本期研究 · GAME MARKET INTELLIGENCE',
+    hero_pre: '把一个游戏战略问题，化成一份能直接交付的',
+    hero_emphasis: '研究简报',
     hero_post: '。',
-    hero_desc: '编排器拆解 · 四专家并行 · 九路实时趋势 · BGE-M3 混合检索 + 精排器 · 评委门控 · 全程流式',
-    spec_strip: ['DeepSeek V4', '九路实时数据源', 'BGE-M3 + 精排器', '评委门控', '流式'],
+    hero_desc: '从趋势采集、风险审查，到 90 天落地动作清单。整个研究链路对外可见、可审查、可复用，把决策者的判断锚定在真实数据上。',
+    hero_cta: '进入工具',
+    spec_strip: ['实时趋势采集', '混合向量检索', '精排', '自动评审门控', '全程流式'],
     pipeline_label: '流水线',
     pipeline_lines: [
       '编排器 → 拆解为 4 个子简报',
@@ -237,11 +241,13 @@ const i18n: Record<Lang, Dict> = {
     runtime_ready: 'RUNTIME READY',
     eyebrow_issue: 'INTEL CHANNEL · OPEN · BAND 02',
     eyebrow_status: 'LIVE',
-    hero_pre: 'A squad of agents, ',
-    hero_emphasis: 'debating',
-    hero_post: ' one strategy question.',
-    hero_desc: 'Orchestrator decomposes · 4 experts in parallel · 9 live trend sources · BGE-M3 hybrid RAG + reranker · judge-gated · full SSE',
-    spec_strip: ['DeepSeek V4', '9 Live Sources', 'BGE-M3 + Reranker', 'Judge-Gated', 'Streaming'],
+    hero_kicker: 'EDITION 02 · GAME MARKET INTELLIGENCE',
+    hero_pre: 'Turn one game-strategy question into a deliverable ',
+    hero_emphasis: 'research memo',
+    hero_post: '.',
+    hero_desc: 'From trend ingest through risk audit to a 90-day action checklist. Every step of the research chain is visible, citable, and reproducible — strategy ready to ship to decision-makers.',
+    hero_cta: 'Open tool',
+    spec_strip: ['Live trend ingest', 'Hybrid retrieval', 'Reranker', 'Auto judge', 'Streaming'],
     pipeline_label: 'pipeline',
     pipeline_lines: [
       'orchestrator → 4 sub-briefs',
@@ -600,9 +606,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-400 text-100 font-mono text-ink-tertiary">
             <div className="hidden md:flex items-center gap-400">
-              <MetaBadge label="model" value="deepseek-v4-flash" />
-              <MetaBadge label="embed" value="bge-m3" />
-              <MetaBadge label="eval" value="hit@5 90.9%" tone="green" />
+              <MetaBadge label="status" value="LIVE" tone="green" />
             </div>
             <button
               onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
@@ -617,57 +621,104 @@ export default function Home() {
       </header>
 
       <div className="max-w-7xl mx-auto px-500 sm:px-700 py-700">
-        {/* HERO — editorial-grade Track 2: eyebrow strip, massive type, spec strip, side pipeline */}
+        {/* HERO — editorial cinematic: text rail left, topographic artwork right.
+            This is the only editorial-track surface; everything below stays Track 2. */}
         <section className="pt-700 pb-1000 relative">
-          <div className="hero-backdrop" aria-hidden />
-          <div className="scanline-overlay" aria-hidden />
+          <div className="relative rounded-2 border border-hairline overflow-hidden bg-surface">
+            <div className="grid lg:grid-cols-[5fr_7fr] min-h-[520px]">
+              {/* Left: text rail */}
+              <div className="relative px-700 py-800 lg:px-900 lg:py-1100 flex flex-col">
+                <div className="hero-backdrop" aria-hidden />
 
-          {/* Eyebrow strip: issue label + status pulse */}
-          <div className="relative flex items-center justify-between gap-400 mb-700 text-[10px] font-mono tracking-[0.22em] uppercase">
-            <span className="text-ink-tertiary">{t.eyebrow_issue}</span>
-            <span className="flex items-center gap-200 text-signal-green">
-              <span className="w-[6px] h-[6px] rounded-full bg-signal-green animate-pulseDot" />
-              {t.eyebrow_status}
-            </span>
+                {/* Eyebrow */}
+                <div className="relative flex items-center justify-between gap-400 mb-800 text-[10px] font-mono tracking-[0.22em] uppercase">
+                  <span className="text-ink-tertiary">{t.eyebrow_issue}</span>
+                  <span className="flex items-center gap-200 text-signal-green">
+                    <span className="w-[6px] h-[6px] rounded-full bg-signal-green animate-pulseDot" />
+                    {t.eyebrow_status}
+                  </span>
+                </div>
+
+                {/* Kicker */}
+                <div className="relative text-[10px] font-mono tracking-[0.22em] uppercase text-ink-tertiary mb-500">
+                  {t.hero_kicker}
+                </div>
+
+                {/* Display headline (serif italic emphasis word) */}
+                <h1
+                  className="relative font-semibold text-ink-primary leading-[1.04] mb-600"
+                  style={{ fontSize: 'clamp(40px, 5.4vw, 80px)', letterSpacing: '-0.035em' }}
+                >
+                  {t.hero_pre}
+                  <span className="hero-display text-signal-blue">{t.hero_emphasis}</span>
+                  {t.hero_post}
+                </h1>
+
+                {/* Subtitle */}
+                <p className="relative text-300 text-ink-secondary leading-relaxed max-w-xl mb-700">
+                  {t.hero_desc}
+                </p>
+
+                {/* CTA + pagination */}
+                <div className="relative flex items-end justify-between mt-auto pt-600">
+                  <a
+                    href="#input"
+                    className="inline-flex items-center gap-300 text-200 font-mono uppercase tracking-[0.14em] text-ink-primary border-b border-signal-blue pb-200 hover:text-signal-blue transition-colors duration-150 ease-console"
+                  >
+                    <span className="inline-flex items-center justify-center w-700 h-700 rounded-full border border-signal-blue text-signal-blue text-[10px]">→</span>
+                    {t.hero_cta}
+                  </a>
+                  <div className="hidden md:flex items-center gap-300 text-[10px] font-mono tracking-[0.22em] text-ink-tertiary">
+                    <span className="text-ink-secondary tabular-nums">01</span>
+                    <span className="w-700 h-px bg-hairline" />
+                    <span className="tabular-nums">04</span>
+                    <span className="ml-300 inline-flex items-center justify-center w-700 h-700 rounded-full border border-hairline text-ink-tertiary">‹</span>
+                    <span className="inline-flex items-center justify-center w-700 h-700 rounded-full border border-hairline text-ink-tertiary">›</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: cinematic SVG artwork */}
+              <div className="relative hidden lg:block border-l border-hairline bg-canvas overflow-hidden">
+                <HeroArtwork />
+                {/* Source grid floats over the artwork's lower half so it stays useful */}
+                <div className="absolute inset-x-500 bottom-500 z-10">
+                  <HUDSourceGrid
+                    enabled={enabledSources}
+                    results={trendResults}
+                    lang={lang}
+                    runningState={running ? 'running' : trendResults.length > 0 ? 'done' : 'idle'}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Spec strip across the bottom — hairline-separated capabilities, no model names */}
+            <div className="relative border-t border-hairline px-700 py-400 flex flex-wrap items-center gap-x-700 gap-y-200 bg-surface-2/30">
+              {t.spec_strip.map((label, i) => (
+                <span
+                  key={i}
+                  className={`text-[10px] font-mono tracking-[0.22em] uppercase ${
+                    i === t.spec_strip.length - 1 ? 'text-signal-green' : 'text-ink-tertiary'
+                  }`}
+                >
+                  {i === t.spec_strip.length - 1 && (
+                    <span className="inline-block w-[6px] h-[6px] rounded-full bg-signal-green animate-pulseDot mr-200 align-middle" />
+                  )}
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div className="relative grid lg:grid-cols-[1.7fr_1fr] gap-900 items-end">
-            <div>
-              <h1
-                className="font-semibold text-ink-primary leading-[0.98] mb-600"
-                style={{ fontSize: 'clamp(48px, 7.8vw, 96px)', letterSpacing: '-0.045em' }}
-              >
-                {t.hero_pre}
-                <span className="text-signal-blue">{t.hero_emphasis}</span>
-                <span className="text-signal-blue">{t.hero_post}</span>
-              </h1>
-              <p className="text-300 text-ink-secondary leading-relaxed max-w-2xl">
-                {t.hero_desc}
-              </p>
-            </div>
+          {/* Mobile-only source grid (the lg version sits inside the artwork column) */}
+          <div className="lg:hidden mt-700">
             <HUDSourceGrid
               enabled={enabledSources}
               results={trendResults}
               lang={lang}
               runningState={running ? 'running' : trendResults.length > 0 ? 'done' : 'idle'}
             />
-          </div>
-
-          {/* Spec strip — hairline-separated metadata in mono caps, Vercel/Linear pattern */}
-          <div className="relative mt-1000 border-t border-hairline pt-400 flex flex-wrap items-center gap-x-700 gap-y-200">
-            {t.spec_strip.map((label, i) => (
-              <span
-                key={i}
-                className={`text-[10px] font-mono tracking-[0.22em] uppercase ${
-                  i === t.spec_strip.length - 1 ? 'text-signal-green' : 'text-ink-tertiary'
-                }`}
-              >
-                {i === t.spec_strip.length - 1 && (
-                  <span className="inline-block w-[6px] h-[6px] rounded-full bg-signal-green animate-pulseDot mr-200 align-middle" />
-                )}
-                {label}
-              </span>
-            ))}
           </div>
         </section>
 
@@ -1353,6 +1404,109 @@ function fmtNumDisplay(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
   return String(n)
+}
+
+// Cinematic SVG artwork for the hero right panel.
+// Visual reading: aurora bands (top) over topographic contour lines (middle) with
+// scattered data points (pulse), and a low-poly horizon silhouette (bottom).
+// Stays in the blueprint-blue + signal-green palette. No imagery, no glassmorphism.
+function HeroArtwork() {
+  // Deterministic data point positions so SSR + CSR match.
+  const points: Array<{ x: number; y: number; delay: number }> = [
+    { x: 120, y: 280, delay: 0 },
+    { x: 220, y: 240, delay: 0.4 },
+    { x: 340, y: 300, delay: 0.8 },
+    { x: 480, y: 260, delay: 1.2 },
+    { x: 580, y: 320, delay: 1.6 },
+    { x: 680, y: 270, delay: 2.0 },
+    { x: 160, y: 350, delay: 0.3 },
+    { x: 400, y: 380, delay: 1.0 },
+    { x: 620, y: 410, delay: 1.7 },
+  ]
+  return (
+    <svg
+      viewBox="0 0 800 600"
+      preserveAspectRatio="xMidYMid slice"
+      className="absolute inset-0 w-full h-full"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="auroraA" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#0070F3" stopOpacity="0" />
+          <stop offset="40%" stopColor="#0070F3" stopOpacity="0.18" />
+          <stop offset="60%" stopColor="#3291FF" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#0070F3" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="auroraB" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#00DC82" stopOpacity="0" />
+          <stop offset="50%" stopColor="#00DC82" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="#00DC82" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="fade" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#0A0A0A" stopOpacity="0" />
+          <stop offset="100%" stopColor="#0A0A0A" stopOpacity="0.6" />
+        </linearGradient>
+        <radialGradient id="point" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#3291FF" stopOpacity="1" />
+          <stop offset="100%" stopColor="#3291FF" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* Aurora bands */}
+      <g className="hero-artwork-aurora">
+        <ellipse cx="380" cy="120" rx="520" ry="90" fill="url(#auroraA)" />
+        <ellipse cx="500" cy="180" rx="420" ry="60" fill="url(#auroraB)" />
+        <ellipse cx="280" cy="80"  rx="380" ry="40" fill="url(#auroraA)" opacity="0.7" />
+      </g>
+
+      {/* Topographic contour curves — gentle horizontal sine waves */}
+      <g stroke="#2E2E2E" strokeWidth="1" fill="none" opacity="0.6">
+        {Array.from({ length: 9 }).map((_, i) => {
+          const baseY = 240 + i * 24
+          const amp = 12 + i * 1.5
+          const d = `M -40 ${baseY} Q 200 ${baseY - amp} 400 ${baseY} T 840 ${baseY}`
+          return <path key={i} d={d} />
+        })}
+      </g>
+      {/* One brighter contour as the focal line */}
+      <path
+        d="M -40 290 Q 200 270 400 290 T 840 290"
+        stroke="#0070F3"
+        strokeWidth="1.2"
+        fill="none"
+        opacity="0.55"
+        className="hero-artwork-contour"
+      />
+
+      {/* Data points scattered along the contours */}
+      <g>
+        {points.map((p, i) => (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r="10" fill="url(#point)" opacity="0.3" />
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r="2.5"
+              fill="#3291FF"
+              className="hero-artwork-data"
+              style={{ animationDelay: `${p.delay}s` }}
+            />
+          </g>
+        ))}
+      </g>
+
+      {/* Horizon silhouette — low-poly steel mountains */}
+      <g fill="#0F0F0F">
+        <polygon points="0,600 0,500 90,440 180,490 270,420 360,470 460,400 540,460 640,410 720,460 800,430 800,600" />
+      </g>
+      <g stroke="#2E2E2E" strokeWidth="1" fill="none" opacity="0.5">
+        <polyline points="0,500 90,440 180,490 270,420 360,470 460,400 540,460 640,410 720,460 800,430" />
+      </g>
+
+      {/* Bottom fade so the spec strip below has clean contrast */}
+      <rect x="0" y="380" width="800" height="220" fill="url(#fade)" />
+    </svg>
+  )
 }
 
 // Platform picker: 9 source chips, toggleable. Default all on. Disabled sources are filtered

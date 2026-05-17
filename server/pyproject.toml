@@ -11,6 +11,7 @@ dependencies = [
     "langchain-openai>=1.2.1",
     "langgraph>=1.2.0",
     "langsmith>=0.8.5",
+    "modal>=1.4.2",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
     "uvicorn[standard]>=0.47.0",
