@@ -66,17 +66,45 @@ The frontend's `app/api/run` route reads `PYTHON_BACKEND_URL` (default
 
 The Python service runs anywhere Python 3.12+ + outbound TCP works.
 
+### Modal (recommended for AI / agent workloads)
+
+`modal_deploy.py` wraps the FastAPI app as a Modal ASGI app. Free tier is $30/mo
+credits; you won't run out at demo traffic.
+
+```bash
+pip install modal
+modal token new                              # browser auth, free signup at modal.com
+
+# Push your local .env to Modal as a named secret
+cd server
+modal secret create stratsquad-env --from-dotenv .env
+
+# Deploy
+modal deploy modal_deploy.py
+# → outputs https://<workspace>--stratsquad-fastapi-app.modal.run
+
+# Health check
+curl https://<workspace>--stratsquad-fastapi-app.modal.run/api/health
+```
+
+Then on Vercel, **Settings → Environment Variables**, add
+`PYTHON_BACKEND_URL=https://<workspace>--stratsquad-fastapi-app.modal.run`,
+redeploy, done.
+
+### Other hosts
+
 | Host | Notes |
 |---|---|
-| **Modal** | `modal serve stratsquad/main.py` — GPU not needed, $0 idle. Best for demo. |
-| **Railway** | one-click; `Dockerfile` above; set env vars in the UI |
-| **Fly.io** | `fly launch --dockerfile server/Dockerfile`; supports 24h SSE streams |
-| **Render** | Free tier sleeps; OK for demo, not interview-day |
-| **腾讯云 Cloud Run / 阿里云函数计算** | low latency from China; 24h+ SSE timeout supported |
-| **VPS (DigitalOcean / 腾讯云轻量)** | `docker run` with the Dockerfile; reverse-proxy via Caddy/nginx |
+| **Fly.io** | `fly launch --dockerfile server/Dockerfile` — long SSE supported |
+| **Railway** | one-click on Dockerfile; $5/mo entry |
+| **Render** | Free tier sleeps; OK for off-hours demo |
+| **Google Cloud Run** | most "industry standard"; 60-minute timeout; needs GCP project |
+| **腾讯云 Cloud Run** | low latency from China; 24h+ SSE supported |
+| **VPS (DigitalOcean / 腾讯云轻量)** | `docker run` with the Dockerfile + Caddy reverse proxy |
 
-Vercel is **not** supported as the backend host (serverless functions have a 60s
-limit on Hobby and a 300s ceiling on Pro; full runs need 60-300s of streaming).
+Vercel is **not** supported as the backend host: serverless functions have a 60s
+limit on Hobby and a 300s ceiling on Pro; full runs (especially with the retry
+round) need 60-300s of continuous streaming.
 
 After deploying, set `PYTHON_BACKEND_URL` on the Vercel frontend project to point
 at the public Python host.
