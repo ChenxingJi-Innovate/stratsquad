@@ -632,10 +632,10 @@ export default function Home() {
                 <span>{t.eyebrow_status}</span>
               </div>
 
-              {/* Headline — bold sans, no italic, no serif */}
+              {/* Headline — Anthropic editorial serif (Copernicus / Tiempos fallback chain) */}
               <h1
-                className="font-semibold text-ink-primary leading-[1.05] mb-600 tracking-[-0.035em]"
-                style={{ fontSize: 'clamp(40px, 6vw, 88px)' }}
+                className="font-serif text-ink-primary leading-[1.05] mb-600 tracking-[-0.025em]"
+                style={{ fontSize: 'clamp(44px, 6.5vw, 96px)', fontWeight: 400 }}
               >
                 {t.hero_pre}
                 <span className="text-signal-blue">{t.hero_emphasis}</span>
@@ -932,18 +932,17 @@ function hasAnyContent(agents: Record<AgentName, AgentState>): boolean {
 
 /* ─────── components ─────── */
 
-// Section header — numbered chapter pattern. Reflects the actual research chain
-// (01 战略问题 → 02 智能体时间线 → ...), not military code names.
+// Section header — numbered chapter pattern. Serif title for the editorial Anthropic feel.
 function SectionRow({ label, title, desc, right }: { label: string; title: string; desc: string; right?: React.ReactNode }) {
   return (
     <div className="mb-500">
-      <div className="flex items-center gap-400 mb-300">
+      <div className="flex items-baseline gap-400 mb-300">
         <span className="text-[11px] font-mono text-ink-tertiary tabular-nums tracking-[0.1em]">{label}</span>
-        <h2 className="text-200 font-semibold text-ink-primary tracking-tight">{title}</h2>
-        <span className="flex-1 border-t border-hairline" />
+        <h2 className="font-serif text-display-sm text-ink-primary" style={{ fontWeight: 400, letterSpacing: '-0.01em' }}>{title}</h2>
+        <span className="flex-1 border-t border-hairline self-center" />
         {right}
       </div>
-      {desc && <p className="text-100 font-mono text-ink-tertiary ml-700">{desc}</p>}
+      {desc && <p className="text-body-sm text-ink-tertiary ml-700">{desc}</p>}
     </div>
   )
 }

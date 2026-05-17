@@ -3,69 +3,86 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html, body {
-  background: #0A0A0A;
-  color: #EDEDED;
+  background: #faf9f5;
+  color: #141413;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: #0070F3;
-  color: #FFFFFF;
+  background: #cc785c;
+  color: #ffffff;
 }
 
 textarea::placeholder, input::placeholder {
-  color: #666666;
+  color: #8e8b82;
 }
 
-/* Mono-rendered markdown for agent / brief output.
-   Headings use sans, body uses sans, but inline code stays mono. */
-.prose-console h1 { font-size: 24px; font-weight: 600; color: #EDEDED; margin: 24px 0 12px; letter-spacing: -0.01em; }
-.prose-console h2 { font-size: 18px; font-weight: 600; color: #EDEDED; margin: 20px 0 8px; padding-top: 12px; border-top: 1px solid #2E2E2E; }
+/* Editorial prose for the composed brief and any cream-surface markdown.
+   Serif headings, humanist body, JetBrains Mono inline code. */
+.prose-console h1 { font-family: ui-serif, "Source Serif 4", Newsreader, Georgia, serif; font-size: 36px; font-weight: 500; color: #141413; margin: 32px 0 16px; letter-spacing: -0.015em; line-height: 1.15; }
+.prose-console h2 { font-family: ui-serif, "Source Serif 4", Newsreader, Georgia, serif; font-size: 28px; font-weight: 500; color: #141413; margin: 28px 0 12px; padding-top: 16px; border-top: 1px solid #e6dfd8; letter-spacing: -0.01em; line-height: 1.2; }
 .prose-console h2:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
-.prose-console h3 { font-size: 15px; font-weight: 600; color: #A1A1A1; margin: 16px 0 4px; }
-.prose-console p  { margin: 8px 0; color: #A1A1A1; }
-.prose-console ul, .prose-console ol { margin: 8px 0 8px 20px; padding: 0; color: #A1A1A1; }
-.prose-console li { margin: 4px 0; }
-.prose-console strong { font-weight: 600; color: #EDEDED; }
-.prose-console em { font-style: normal; color: #EDEDED; }
+.prose-console h3 { font-family: ui-serif, "Source Serif 4", Newsreader, Georgia, serif; font-size: 22px; font-weight: 500; color: #141413; margin: 20px 0 8px; line-height: 1.3; }
+.prose-console p  { margin: 12px 0; color: #3d3d3a; }
+.prose-console ul, .prose-console ol { margin: 12px 0 12px 24px; padding: 0; color: #3d3d3a; }
+.prose-console li { margin: 6px 0; }
+.prose-console strong { font-weight: 600; color: #141413; }
+.prose-console em { font-style: italic; color: #252523; }
+.prose-console a { color: #cc785c; text-decoration: underline; text-decoration-color: rgba(204, 120, 92, 0.4); text-underline-offset: 3px; }
 .prose-console code {
-  font-family: "Geist Mono", "SF Mono", "JetBrains Mono", Menlo, monospace;
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 0.9em;
-  background: #1A1A1A;
-  border: 1px solid #2E2E2E;
+  background: #efe9de;
   padding: 1px 6px;
-  border-radius: 2px;
-  color: #00DC82;
+  border-radius: 4px;
+  color: #252523;
 }
 .prose-console blockquote {
-  border-left: 2px solid #0070F3;
-  padding-left: 12px;
-  margin: 12px 0;
-  color: #A1A1A1;
+  border-left: 3px solid #cc785c;
+  padding-left: 16px;
+  margin: 16px 0;
+  color: #3d3d3a;
   font-style: normal;
 }
-.prose-console hr { border: 0; border-top: 1px solid #2E2E2E; margin: 16px 0; }
+.prose-console hr { border: 0; border-top: 1px solid #e6dfd8; margin: 24px 0; }
 
-/* Scrollbars — dark, thin */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #0A0A0A; }
-::-webkit-scrollbar-thumb { background: #2E2E2E; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #3D3D3D; }
-
-/* Subtle grid backdrop on canvas — like a CRT / monitoring console */
-.canvas-grid {
-  background-image:
-    linear-gradient(rgba(46, 46, 46, 0.4) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(46, 46, 46, 0.4) 1px, transparent 1px);
-  background-size: 48px 48px;
-  background-position: -1px -1px;
+/* Prose on dark surfaces (agent output streaming inside a dark navy card). */
+.prose-console-dark h1 { font-family: ui-serif, "Source Serif 4", Newsreader, Georgia, serif; font-size: 24px; font-weight: 500; color: #faf9f5; margin: 24px 0 12px; letter-spacing: -0.01em; }
+.prose-console-dark h2 { font-family: ui-serif, "Source Serif 4", Newsreader, Georgia, serif; font-size: 20px; font-weight: 500; color: #faf9f5; margin: 20px 0 8px; padding-top: 12px; border-top: 1px solid #2e2c28; }
+.prose-console-dark h2:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.prose-console-dark h3 { font-size: 16px; font-weight: 600; color: #faf9f5; margin: 16px 0 4px; }
+.prose-console-dark p  { margin: 8px 0; color: #a09d96; }
+.prose-console-dark ul, .prose-console-dark ol { margin: 8px 0 8px 20px; padding: 0; color: #a09d96; }
+.prose-console-dark li { margin: 4px 0; }
+.prose-console-dark strong { font-weight: 600; color: #faf9f5; }
+.prose-console-dark em { font-style: italic; color: #faf9f5; }
+.prose-console-dark code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.9em;
+  background: #252320;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #e8a55a;
 }
+.prose-console-dark blockquote {
+  border-left: 2px solid #cc785c;
+  padding-left: 12px;
+  margin: 12px 0;
+  color: #a09d96;
+}
+.prose-console-dark hr { border: 0; border-top: 1px solid #2e2c28; margin: 16px 0; }
+
+/* Light-mode scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d8d2c5; border-radius: 6px; border: 2px solid #faf9f5; }
+::-webkit-scrollbar-thumb:hover { background: #b8b0a0; }
 
 .line-clamp-2 {
   display: -webkit-box;
@@ -74,138 +91,8 @@ textarea::placeholder, input::placeholder {
   overflow: hidden;
 }
 
-/* === Territory Studio FUI vocabulary ============================== */
-
-/* Hero backdrop: faint dot-grid + slow horizontal scanline drift.
-   Two scales (12px fine, 48px coarse) for depth; scanline is the FUI signal. */
-.hero-backdrop {
-  position: absolute;
-  inset: -8% -4% -20% -4%;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(237, 237, 237, 0.06) 1px, transparent 1.5px),
-    linear-gradient(rgba(46, 46, 46, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(46, 46, 46, 0.18) 1px, transparent 1px);
-  background-size: 12px 12px, 48px 48px, 48px 48px;
-  mask-image: radial-gradient(ellipse 70% 80% at 50% 30%, #000 30%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 80% at 50% 30%, #000 30%, transparent 80%);
-  z-index: 0;
-}
-
-/* Subtle global scanline — phosphor edge atmosphere, never moves faster than 8s. */
-@keyframes scanlineDrift {
-  from { background-position-y: 0; }
-  to   { background-position-y: 4px; }
-}
-.scanline-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 112, 243, 0.018) 0px,
-    rgba(0, 112, 243, 0.018) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  animation: scanlineDrift 8s linear infinite;
-  z-index: 1;
-}
-
-/* Corner brackets — FUI signature. Four 12×12 L-shapes at the corners of any wrapped panel. */
-.hud-frame {
-  position: relative;
-}
-.hud-frame::before,
-.hud-frame::after,
-.hud-frame > .hud-corner-tr,
-.hud-frame > .hud-corner-bl {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-color: #3D3D3D;
-  border-style: solid;
-  pointer-events: none;
-  z-index: 2;
-  transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.hud-frame::before {
-  top: -1px; left: -1px;
-  border-width: 1px 0 0 1px;
-}
-.hud-frame::after {
-  bottom: -1px; right: -1px;
-  border-width: 0 1px 1px 0;
-}
-.hud-frame > .hud-corner-tr {
-  top: -1px; right: -1px;
-  border-width: 1px 1px 0 0;
-}
-.hud-frame > .hud-corner-bl {
-  bottom: -1px; left: -1px;
-  border-width: 0 0 1px 1px;
-}
-/* Active state — corners light up to signal-blue when the panel is hot. */
-.hud-frame.is-active::before,
-.hud-frame.is-active::after,
-.hud-frame.is-active > .hud-corner-tr,
-.hud-frame.is-active > .hud-corner-bl {
-  border-color: #0070F3;
-}
-
-/* Amber scanbar — runs along the bottom edge of running agent rows. */
-@keyframes scanbarSlide {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(100%); }
-}
-.agent-scanbar {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 1px;
-  pointer-events: none;
-  overflow: hidden;
-}
-.agent-scanbar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, #F5A623 50%, transparent);
-  animation: scanbarSlide 1.8s linear infinite;
-}
-
-/* Code identifier — used for section labels like [OBJ-001]. Tight tracking, hairline tone. */
-.fui-code-id {
-  font-family: 'Geist Mono', 'SF Mono', 'JetBrains Mono', Menlo, monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-}
-
-/* SVG pipeline flow — animated dashed connectors that flow left to right when running. */
-@keyframes streamDash {
-  to { stroke-dashoffset: -24; }
-}
-.pipe-connector { stroke-dasharray: 4 8; }
-.pipe-connector.running { animation: streamDash 1.2s linear infinite; }
-
-/* Per-tick reveal for the hairline SimBar — each tick fades in 60ms after the previous. */
-@keyframes tickIn {
-  from { opacity: 0; transform: translateY(1px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.tick-on { animation: tickIn 220ms cubic-bezier(0.4, 0, 0.2, 1) both; }
-
-/* Rolling number — when value changes, fade the new digit in from below. */
-@keyframes rollUp {
-  from { opacity: 0; transform: translateY(40%); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.roll-num { animation: rollUp 180ms cubic-bezier(0.4, 0, 0.2, 1); }
-
-/* Brief markdown: OpenType polish only (no drop-cap — Editorial signal per DESIGN.md Track 2). */
+/* OpenType polish on the composed brief. No drop-cap. */
 .prose-brief {
-  font-feature-settings: "ss01", "cv11", "calt", "kern", "liga";
-  -webkit-font-feature-settings: "ss01", "cv11", "calt", "kern", "liga";
+  font-feature-settings: "kern", "liga", "calt";
+  -webkit-font-feature-settings: "kern", "liga", "calt";
 }
-
